@@ -133,7 +133,7 @@ No complex installations needed. Follow these simple steps:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/ummadi/orbit.git
+git clone https://github.com/healer-ctrl/orbit.git
 cd orbit
 ```
 
