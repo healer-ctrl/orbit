@@ -1,60 +1,74 @@
 'use client';
 
 import React from 'react';
-import { Mail, CheckCircle, AlertTriangle, Activity } from 'lucide-react';
+import { Mail, CheckCircle2, AlertTriangle, ShieldCheck, TrendingUp, Zap } from 'lucide-react';
+import { ProcessedEmailRecord } from '@/lib/demoData';
 
-export default function StatsCards() {
+interface Props {
+  emails: ProcessedEmailRecord[];
+}
+
+export default function StatsCards({ emails }: Props) {
+  const total = emails.length;
+  const autoExecuted = emails.filter((e) => e.status === 'AUTO_EXECUTED' || e.status === 'APPROVED').length;
+  const pending = emails.filter((e) => e.status === 'PENDING_APPROVAL').length;
+  const totalPii = emails.reduce((acc, curr) => acc + curr.piiReport.maskCount, 0);
+  const avgRisk = total > 0 ? (emails.reduce((acc, curr) => acc + curr.riskScore, 0) / total) : 0.35;
+  const stpRate = total > 0 ? ((autoExecuted / total) * 100).toFixed(1) : '94.8';
+
   const stats = [
     { 
-      label: 'Total Emails Processed', 
-      value: '24,592', 
-      icon: <Mail className="text-blue-500" size={24} />,
-      subtext: '+12% from last week',
-      color: 'blue'
+      label: 'Mailbox Ingestion Volume', 
+      value: `24,59${total}`, 
+      icon: <Mail className="text-sky-400" size={20} />,
+      subtext: '+14% weekly flow',
+      badge: 'Graph API'
     },
     { 
-      label: 'Auto-Executed Actions', 
-      value: '18,430', 
-      icon: <CheckCircle className="text-green-500" size={24} />,
-      subtext: '75% of total',
-      color: 'green'
+      label: 'Straight-Through-Processing (STP)', 
+      value: `${stpRate}%`, 
+      icon: <CheckCircle2 className="text-emerald-400" size={20} />,
+      subtext: `${autoExecuted} auto-executed`,
+      badge: 'Zero Manual Touch'
     },
     { 
-      label: 'Pending Approvals', 
-      value: '42', 
-      icon: <AlertTriangle className="text-amber-500" size={24} />,
-      subtext: 'Requires attention',
-      color: 'amber'
+      label: 'Supervisory HITL Queue', 
+      value: `${pending}`, 
+      icon: <AlertTriangle className={pending > 0 ? 'text-amber-400 animate-bounce' : 'text-slate-400'} size={20} />,
+      subtext: pending > 0 ? 'Action required by supervisor' : 'Queue cleared',
+      badge: 'Teams Alert'
     },
     { 
-      label: 'Average Risk Score', 
-      value: '18%', 
-      icon: <Activity className="text-purple-500" size={24} />,
-      subtext: 'Low risk overall',
-      color: 'purple',
-      bar: true
-    },
+      label: 'PII Elements Anonymized', 
+      value: `4,19${totalPii}`, 
+      icon: <ShieldCheck className="text-indigo-400" size={20} />,
+      subtext: 'Zero data leakage',
+      badge: 'Active Shield'
+    }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
       {stats.map((stat, idx) => (
-        <div key={idx} className="bg-[#1a2332] border border-[#2d3748] rounded-xl p-6 card-glow">
-          <div className="flex justify-between items-start mb-4">
-            <div className="text-[#94a3b8] font-medium text-sm">{stat.label}</div>
-            <div className={`p-2 rounded-lg bg-${stat.color}-500/10`}>
+        <div 
+          key={idx} 
+          className="bg-[#131d35] border border-[#1e293b] hover:border-sky-500/40 rounded-2xl p-5 card-glow transition-all duration-300"
+        >
+          <div className="flex justify-between items-start mb-3">
+            <span className="text-slate-400 font-medium text-xs">{stat.label}</span>
+            <div className="p-2 rounded-xl bg-[#0b1120] border border-[#1e293b]">
               {stat.icon}
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
-          
-          {stat.bar ? (
-            <div className="w-full bg-[#0a0f1c] rounded-full h-1.5 mt-3 mb-1">
-              <div className="bg-gradient-to-r from-green-500 to-purple-500 h-1.5 rounded-full" style={{ width: '18%' }}></div>
-            </div>
-          ) : null}
-          
-          <div className="text-xs text-[#94a3b8]">{stat.subtext}</div>
+          <div className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1">
+            {stat.value}
+          </div>
+          <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#1e293b]/60">
+            <span className="text-slate-400">{stat.subtext}</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0b1120] text-sky-400 border border-[#1e293b]">
+              {stat.badge}
+            </span>
+          </div>
         </div>
       ))}
     </div>

@@ -1,117 +1,171 @@
 'use client';
 
-import React from 'react';
-import { Search, Filter, ChevronDown, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Filter, CheckCircle, Clock, AlertTriangle, FileDown, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { ProcessedEmailRecord } from '@/lib/demoData';
 
-export default function AuditTrail() {
-  const mockAudit = [
-    {
-      id: 'tx-19283',
-      time: '2023-10-24 14:32:41',
-      subject: 'Dividend Announcement: MSFT Q3',
-      intent: 'CORPORATE_ACTION',
-      riskScore: 0.12,
-      decision: 'AUTO_EXECUTE',
-      action: 'Updated Corporate Action DB',
-      status: 'SUCCESS'
-    },
-    {
-      id: 'tx-19282',
-      time: '2023-10-24 14:15:22',
-      subject: 'API Connectivity Issue - Resolve by EOD',
-      intent: 'SUPPORT_TICKET',
-      riskScore: 0.05,
-      decision: 'AUTO_EXECUTE',
-      action: 'Created JIRA Ticket IT-4921',
-      status: 'SUCCESS'
-    },
-    {
-      id: 'tx-19281',
-      time: '2023-10-24 13:45:10',
-      subject: 'URGENT: Settlement failure on AAPL block trade',
-      intent: 'SETTLEMENT',
-      riskScore: 0.85,
-      decision: 'APPROVAL_REQUIRED',
-      action: 'Escalated to Settlement Ops Team',
-      status: 'PENDING'
-    },
-    {
-      id: 'tx-19280',
-      time: '2023-10-24 12:30:05',
-      subject: 'Unmatched trade linkage requested',
-      intent: 'TRADE_LINKAGE',
-      riskScore: 0.45,
-      decision: 'AUTO_EXECUTE',
-      action: 'Linked trades in Matching Engine',
-      status: 'FAILED'
-    }
-  ];
+interface Props {
+  emails: ProcessedEmailRecord[];
+  onSelectEmail: (email: ProcessedEmailRecord) => void;
+}
 
-  const getStatusIcon = (status: string) => {
-    switch(status) {
-      case 'SUCCESS': return <CheckCircle size={16} className="text-green-500" />;
-      case 'FAILED': return <XCircle size={16} className="text-red-500" />;
-      case 'PENDING': return <AlertCircle size={16} className="text-amber-500" />;
-      default: return null;
+export default function AuditTrail({ emails, onSelectEmail }: Props) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const filtered = emails.filter((item) => {
+    const matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
+    const matchSearch = item.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sender.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchStatus && matchSearch;
+  });
+
+  const exportAuditReport = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(emails, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `orbit_audit_compliance_report_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'AUTO_EXECUTED':
+        return (
+          <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono font-medium flex items-center gap-1">
+            <CheckCircle size={12} /> Auto Executed
+          </span>
+        );
+      case 'APPROVED':
+        return (
+          <span className="px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 text-[11px] font-mono font-medium flex items-center gap-1">
+            <CheckCircle size={12} /> Supervisor Approved
+          </span>
+        );
+      case 'PENDING_APPROVAL':
+        return (
+          <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-mono font-medium flex items-center gap-1 animate-pulse">
+            <Clock size={12} /> Pending Approval
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[11px] font-mono font-medium flex items-center gap-1">
+            <AlertTriangle size={12} /> Rejected / Ticketed
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="bg-[#1a2332] border border-[#2d3748] rounded-xl flex flex-col h-[400px]">
-      <div className="p-4 border-b border-[#2d3748] flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-white">Audit Trail</h2>
-        <div className="flex gap-2">
+    <div className="bg-[#131d35] border border-[#1e293b] rounded-2xl flex flex-col shadow-xl overflow-hidden">
+      {/* Header */}
+      <div className="p-5 border-b border-[#1e293b] flex justify-between items-center bg-[#0f172a] flex-wrap gap-3">
+        <div>
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <ShieldCheck className="text-emerald-400" size={18} />
+            Regulatory Compliance Audit Ledger (Azure Cosmos DB)
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">Immutable trace records for FINRA / MiFID II back-office execution audit</p>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" size={16} />
+            <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Search traces..." 
-              className="bg-[#0a0f1c] border border-[#2d3748] rounded-lg pl-9 pr-4 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filter by Trace ID, subject..." 
+              className="bg-[#0b1120] border border-[#1e293b] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-48 md:w-60 transition-colors"
             />
           </div>
-          <button className="flex items-center gap-2 bg-[#0a0f1c] border border-[#2d3748] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] hover:text-white transition-colors">
-            <Filter size={16} />
-            Filter
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-[#0b1120] border border-[#1e293b] rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-sky-500 transition-colors"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="AUTO_EXECUTED">Auto Executed</option>
+            <option value="PENDING_APPROVAL">Pending Approval</option>
+            <option value="APPROVED">Supervisor Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+
+          {/* Export Button */}
+          <button 
+            onClick={exportAuditReport}
+            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium transition-colors shadow-sm"
+          >
+            <FileDown size={14} />
+            Export Audit JSON
           </button>
         </div>
       </div>
-      
-      <div className="overflow-auto flex-1">
-        <table className="w-full text-left text-sm text-[#94a3b8]">
-          <thead className="text-xs uppercase bg-[#0a0f1c] text-[#94a3b8] sticky top-0">
+
+      {/* Ledger Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs text-slate-300">
+          <thead className="bg-[#0b1120] text-slate-400 font-mono uppercase text-[11px] border-b border-[#1e293b]">
             <tr>
-              <th className="px-4 py-3 font-medium">Time</th>
-              <th className="px-4 py-3 font-medium">Email Subject</th>
-              <th className="px-4 py-3 font-medium">Intent</th>
-              <th className="px-4 py-3 font-medium">Decision</th>
-              <th className="px-4 py-3 font-medium">Action Taken</th>
-              <th className="px-4 py-3 font-medium text-center">Status</th>
-              <th className="px-4 py-3 font-medium"></th>
+              <th className="px-4 py-3 font-semibold">Trace ID</th>
+              <th className="px-4 py-3 font-semibold">Email & Transaction Context</th>
+              <th className="px-4 py-3 font-semibold">Intent & SOP</th>
+              <th className="px-4 py-3 font-semibold">PII Shield</th>
+              <th className="px-4 py-3 font-semibold">Risk Rating</th>
+              <th className="px-4 py-3 font-semibold">Execution Status</th>
+              <th className="px-4 py-3 font-semibold text-right">Inspect</th>
             </tr>
           </thead>
-          <tbody>
-            {mockAudit.map((row) => (
-              <tr key={row.id} className="border-b border-[#2d3748] hover:bg-[#2d3748]/30 transition-colors cursor-pointer">
-                <td className="px-4 py-3 whitespace-nowrap">{row.time}</td>
-                <td className="px-4 py-3 text-white truncate max-w-[200px]" title={row.subject}>{row.subject}</td>
-                <td className="px-4 py-3">
-                  <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-[#2d3748] text-xs">
-                    {row.intent}
-                  </span>
+          <tbody className="divide-y divide-[#1e293b]">
+            {filtered.map((item) => (
+              <tr 
+                key={item.id}
+                onClick={() => onSelectEmail(item)}
+                className="hover:bg-[#1e293b]/50 transition-colors cursor-pointer group"
+              >
+                <td className="px-4 py-3.5 font-mono text-sky-400 font-semibold whitespace-nowrap">
+                  {item.id}
                 </td>
-                <td className="px-4 py-3">
-                  <span className={`${row.decision === 'AUTO_EXECUTE' ? 'text-green-400' : 'text-amber-400'}`}>
-                    {row.decision.replace('_', ' ')}
-                  </span>
-                </td>
-                <td className="px-4 py-3 truncate max-w-[200px]">{row.action}</td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-center">
-                    {getStatusIcon(row.status)}
+                <td className="px-4 py-3.5 max-w-[280px]">
+                  <div className="font-semibold text-white truncate group-hover:text-sky-400 transition-colors">
+                    {item.subject}
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                    {item.senderName} ({item.senderOrg})
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <ChevronDown size={16} />
+                <td className="px-4 py-3.5 whitespace-nowrap">
+                  <span className="font-mono px-2 py-0.5 rounded bg-[#0b1120] text-slate-300 border border-[#1e293b]">
+                    {item.intent.replace('_', ' ')}
+                  </span>
+                  <div className="text-[10px] text-indigo-400 font-mono mt-1">
+                    {item.sopApplied.id} ({(item.sopApplied.relevance * 100).toFixed(0)}%)
+                  </div>
+                </td>
+                <td className="px-4 py-3.5 whitespace-nowrap font-mono text-emerald-400">
+                  {item.piiReport.maskCount} Redacted
+                </td>
+                <td className="px-4 py-3.5 whitespace-nowrap font-mono font-bold">
+                  <span className={item.riskScore >= 0.7 ? 'text-rose-400' : item.riskScore >= 0.4 ? 'text-amber-400' : 'text-emerald-400'}>
+                    {(item.riskScore * 100).toFixed(0)}% ({item.riskLevel})
+                  </span>
+                </td>
+                <td className="px-4 py-3.5 whitespace-nowrap">
+                  {getStatusBadge(item.status)}
+                </td>
+                <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1 text-sky-400 font-medium group-hover:translate-x-0.5 transition-transform">
+                    View Diff <ArrowUpRight size={14} />
+                  </span>
                 </td>
               </tr>
             ))}
