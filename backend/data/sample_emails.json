@@ -1,0 +1,47 @@
+[
+  {
+    "id": "email_1",
+    "sender": "notifications@dtcc.com",
+    "subject": "CORPORATE ACTION ANNOUNCEMENT: SAP SE DIVIDEND (ISIN DE0007164600)",
+    "body": "CONFIDENTIAL - DTCC Corporate Actions Announcement\n\nPlease be advised that SAP SE (ISIN: DE0007164600) has confirmed a mandatory cash dividend of EUR 2.20 per share.\nEx-Date: 2024-05-18\nRecord Date: 2024-05-19\nPayment Date: 2024-05-22\n\nDirect contact officer: Michael Braun (+49 69 1234 5678, m.braun@external-advisory.de).\nInternal clearing account reference: ACC: 884729104829.\n\nPlease reconcile your entitlements against Euroclear/Clearstream positions before record date.",
+    "received_at": "2024-05-10T10:00:00Z",
+    "attachments": ["MT564_SAP_DIVIDEND.pdf"],
+    "raw_headers": {"X-Priority": "3", "Message-ID": "<20240510-dtcc-sap@dtcc.com>"}
+  },
+  {
+    "id": "email_2",
+    "sender": "settlements@clearstream.com",
+    "subject": "URGENT: FAILED SETTLEMENT - T+1 SSI CORRECTION REQUIRED (TRD-998822)",
+    "body": "CRITICAL / URGENT ACTION REQUIRED - SETTLEMENT FAILURE\n\nTrade reference TRD-998822 with counterparty JPMorgan Chase (CHASUS33XXX) for value USD 2,450,000.00 failed matching in TARGET2 due to incorrect SSI instruction on your side.\n\nCustodian notes: Incorrect Beneficiary IBAN DE89370400440532013000 provided. Correct account must be COBADEFF account.\nTrade Settlement Cutoff: 14:00 CET today.\nTrader in charge: Sarah Jenkins (cell: +1-212-555-0199, SSN: 992-12-8821).\n\nPlease update SSI immediately to prevent buy-in penalty.",
+    "received_at": "2024-05-11T09:30:00Z",
+    "attachments": ["UNMATCHED_REPORT_TRD998822.xml"],
+    "raw_headers": {"X-Priority": "1", "Message-ID": "<clearstream-fail-998822@clearstream.com>"}
+  },
+  {
+    "id": "email_3",
+    "sender": "middleoffice@socgen.com",
+    "subject": "Request to Link Block Trade TRD-2024-88712 to US0378331005 (Apple Inc)",
+    "body": "Hi Ops Team,\n\nPlease allocate and link block trade ID TRD-2024-88712 to Apple Inc (CUSIP: 037833100, ISIN: US0378331005).\nTrade size: USD 1,500,000.00.\nTarget Desk Book: EQ-US-FLOW.\nBroker Contact: David Miller (phone: 212-555-7821, internal IP: 10.240.12.88).\n\nThanks,\nNew York Trading Desk",
+    "received_at": "2024-05-12T11:15:00Z",
+    "attachments": [],
+    "raw_headers": {"X-Priority": "3", "Message-ID": "<ny-eq-desk-88712@socgen.com>"}
+  },
+  {
+    "id": "email_4",
+    "sender": "referencedata-alerts@reuters.com",
+    "subject": "ALERT: Security Identifier Mismatch Detected for Position POS-44332",
+    "body": "Automated Reference Data Exception:\n\nPosition POS-44332 currently mapped to obsolete ISIN XS1234567890. Following issuer debt restructuring, the active bond ISIN has been updated to XS0987654321 (SocGen 5Y Senior Bond).\nAccount Ref: ACCT# 992817263541\nData Steward: Elena Rostova (+33 1 42 14 20 00).\n\nPlease patch instrument master reference mapping.",
+    "received_at": "2024-05-13T08:45:00Z",
+    "attachments": [],
+    "raw_headers": {"X-Priority": "2", "Message-ID": "<refdata-alert-pos44332@reuters.com>"}
+  },
+  {
+    "id": "email_5",
+    "sender": "hr-onboarding@socgen.com",
+    "subject": "Access Provisioning Request: Trade Booking System for New Analyst",
+    "body": "Hello Support Team,\n\nPlease provision Trade Booking & Settlement Portal access for John Doe (Employee ID: EMP-883921, email: john.doe.contractor@personalmail.org, phone: +33 6 12 34 56 78).\nDepartment: Global Markets Operations - Paris.\nRequired Roles: Trade Entry, Settlement Read-Only.\n\nManager Sign-off: Approved by Operations Director.",
+    "received_at": "2024-05-14T14:20:00Z",
+    "attachments": [],
+    "raw_headers": {"X-Priority": "3", "Message-ID": "<hr-req-883921@socgen.com>"}
+  }
+]

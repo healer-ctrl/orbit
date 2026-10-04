@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0a0f1c;
+  --bg-secondary: #111827;
+  --bg-card: #1a2332;
+  --border: #2d3748;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-amber: #f59e0b;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Glowing card effect */
+.card-glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+}
+
+/* Animated pulse for live indicators */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Agent pipeline progress animation */
+@keyframes pipeline-flow {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+.pipeline-flow {
+  animation: pipeline-flow 1.5s ease-out forwards;
+}
