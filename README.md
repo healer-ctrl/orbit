@@ -2,11 +2,20 @@
 ### Société Générale Capital Markets Hackathon 2024 · Built by **Team Orbit**
 
 [![Azure Cloud Native](https://img.shields.io/badge/Azure-Cloud%20Native-0078D4?logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-Azure%20Static%20Web%20App-success?logo=microsoftazure)](https://ambitious-moss-048f25a0f.5.azurestaticapps.net)
 [![Azure OpenAI](https://img.shields.io/badge/Azure%20OpenAI-GPT--4o-0078D4?logo=openai&logoColor=white)](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
 [![Azure AI Search](https://img.shields.io/badge/Azure-AI%20Search%20(RAG)-0078D4)](https://azure.microsoft.com/en-us/products/ai-services/ai-search)
 [![Azure Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-Serverless%20Audit-4A154B)](https://azure.microsoft.com/en-us/products/cosmos-db)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14%20App%20Router-black?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![PII Guardrail Shield](https://img.shields.io/badge/Security-PII%20%26%20Prompt%20Shield-emerald)](https://github.com/ummadi/orbit)
+
+---
+
+## 🌐 Public Live Dashboard URL
+
+> 🚀 **Live Production Cloud URL**: [https://ambitious-moss-048f25a0f.5.azurestaticapps.net](https://ambitious-moss-048f25a0f.5.azurestaticapps.net)
+>
+> Open this link on any device/laptop directly — zero local installation required! Includes Microsoft Entra ID SSO integration and enterprise security headers.
 
 ---
 
