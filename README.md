@@ -108,8 +108,9 @@
 4. **📊 Enterprise Compliance & Audit**:
    - **Azure Cosmos DB** stores full audit records (trace ID, raw vs sanitized payload, model telemetry, and approval records) satisfying regulatory requirements (FINRA / MiFID II).
 
-5. **💻 Real-Time Operations Dashboard**:
-   - Next.js 14 dark-theme dashboard with Bloomberg-inspired UX, live agent pipeline animations, and approval queue.
+6. **🔐 Azure Key Vault Zero-Trust Secret Management**:
+   - Zero hardcoded or plain-text secrets in repository or environment files.
+   - All connection strings, OpenAI keys, Search keys, and Webhook URLs dynamically resolved via `Azure Key Vault` (`orbit-vault-3207`) using Azure Managed Identity / RBAC `DefaultAzureCredential`.
 
 ---
 
@@ -118,11 +119,13 @@
 All cloud infrastructure is provisioned and running on Azure:
 
 ```ini
+AZURE_KEY_VAULT_URI     = https://orbit-vault-3207.vault.azure.net/
 AZURE_OPENAI_ENDPOINT   = https://mailmind-openai-3207.openai.azure.com/
 AZURE_SEARCH_ENDPOINT   = https://mailmind-search-3207.search.windows.net
 AZURE_COSMOS_ENDPOINT   = https://mailmind-cosmos-3209.documents.azure.com:443/
 AZURE_FUNCTIONS_APP_URL = https://mailmind-functions-3207.azurewebsites.net
 AZURE_STORAGE_ACCOUNT   = mailmindstore3207
+AZURE_STATIC_WEB_APP    = https://ambitious-moss-048f25a0f.5.azurestaticapps.net
 ```
 
 ---
