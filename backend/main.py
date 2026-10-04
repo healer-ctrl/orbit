@@ -5,12 +5,16 @@ from datetime import datetime
 from typing import List
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from backend.models.email_models import IncomingEmail
 from backend.agents.orchestrator import MailMindOrchestrator
 from backend.services.cosmos_service import CosmosService
+from backend.services.swift_engine import SWIFTEngine
+
+from backend.services.compliance_report_generator import ComplianceReportGenerator
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 logger = logging.getLogger("mailmind")
@@ -75,6 +79,8 @@ app.add_middleware(
 
 orchestrator = MailMindOrchestrator()
 cosmos = orchestrator.cosmos
+compliance_generator = ComplianceReportGenerator()
+swift_engine = SWIFTEngine()
 
 # ── In-memory stores for demo (fallback when Cosmos DB isn't configured) ─────
 
@@ -191,6 +197,70 @@ async def get_audit(trace_id: str):
         if record.get("trace_id") == trace_id:
             return record
     raise HTTPException(status_code=404, detail="Audit trail not found")
+
+
+@app.get("/api/compliance/certificate/{email_id}")
+async def get_compliance_certificate(email_id: str, format: str = Query("json")):
+    """
+    Generate formal Regulatory Compliance Audit Certificate conforming to:
+      1. MiFID II RTS 25 UTC Clock Synchronization (microsecond precision).
+      2. FINRA Rule 4511 & SEC 17a-4 WORM 6-year retention ledger.
+      3. Zero-PII Anonymization cryptographic proof.
+      4. Multi-agent execution DAG lineage trace.
+      5. Supervisor cryptographic approval signature hash.
+    
+    Supports format='json' (default) or format='html' for printable PDF certificate.
+    """
+    email_data = None
+    pipeline_result = None
+    audit_record = None
+
+    # 1. Search in memory
+    for email in _processed_emails:
+        if email.get("id") == email_id:
+            email_data = email
+            pipeline_result = email.get("pipeline_result")
+            break
+
+    # 2. Search in Cosmos DB
+    if not email_data:
+        try:
+            email_data = cosmos.get_email(email_id)
+        except Exception:
+            pass
+
+    # 3. Search in sample emails dataset
+    if not email_data:
+        try:
+            with open("backend/data/sample_emails.json") as f:
+                sample_emails = json.load(f)
+                for se in sample_emails:
+                    if se.get("id") == email_id:
+                        email_data = se
+                        break
+        except Exception:
+            pass
+
+    # 4. Search audit record
+    for record in _audit_records:
+        if record.get("email_id") == email_id:
+            audit_record = record
+            if not pipeline_result:
+                pipeline_result = record.get("pipeline_result")
+            break
+
+    cert_data = compliance_generator.generate_certificate_data(
+        email_id=email_id,
+        email_data=email_data,
+        pipeline_result=pipeline_result,
+        audit_record=audit_record,
+    )
+
+    if format.lower() == "html":
+        html_content = compliance_generator.generate_certificate_html(cert_data)
+        return HTMLResponse(content=html_content, status_code=200)
+
+    return cert_data
 
 
 @app.get("/api/actions")
@@ -338,3 +408,63 @@ async def trigger_demo():
     except Exception as e:
         logger.error("Demo failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── SWIFT ISO 15022 & ISO 20022 Endpoints ────────────────────────────────────
+
+@app.get("/api/swift/samples")
+async def get_swift_samples():
+    """Returns generated SWIFT MT and ISO 20022 MX messages for all 5 sample emails."""
+    try:
+        samples = swift_engine.generate_all_sample_messages()
+        return {"samples": samples, "count": len(samples)}
+    except Exception as e:
+        logger.error("Failed to generate SWIFT samples: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/swift/preview")
+async def preview_swift_message(email: IncomingEmail):
+    """Generates SWIFT MT (ISO 15022) and ISO 20022 MX representations for an incoming email."""
+    try:
+        email_dict = email.model_dump()
+        mt_result = swift_engine.email_to_swift_mt(email_dict)
+        mx_result = swift_engine.email_to_iso20022(email_dict)
+        return {
+            "email_id": email.id,
+            "swift_mt": mt_result,
+            "iso20022_mx": mx_result,
+        }
+    except Exception as e:
+        logger.error("Failed to generate SWIFT preview: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/swift/validate")
+async def validate_swift(payload: dict):
+    """Validates raw SWIFT MT text or ISO 20022 XML."""
+    raw_message = payload.get("message", "")
+    if not raw_message:
+        raise HTTPException(status_code=400, detail="Missing 'message' in payload")
+
+    if raw_message.strip().startswith("<?xml") or raw_message.strip().startswith("<Document"):
+        # ISO 20022 XML Validation
+        parsed = swift_engine.iso20022_to_entity(raw_message)
+        is_valid = bool(parsed.get("root_tag"))
+        return {
+            "standard": "ISO 20022",
+            "is_valid": is_valid,
+            "parsed_entity": parsed,
+            "errors": [] if is_valid else ["Invalid XML root or document structure"],
+        }
+    else:
+        # ISO 15022 MT Validation
+        report = swift_engine.validate_swift_message(raw_message)
+        parsed_entity = swift_engine.swift_mt_to_entity(raw_message)
+        return {
+            "standard": "ISO 15022",
+            "is_valid": report["is_valid"],
+            "validation_report": report,
+            "parsed_entity": parsed_entity,
+        }
+

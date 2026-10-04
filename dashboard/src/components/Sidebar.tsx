@@ -46,6 +46,13 @@ export default function Sidebar() {
           <CheckSquare size={18} />
           <span>HITL Approvals</span>
         </a>
+        <a href="#copilot" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sky-300 hover:text-white hover:bg-sky-500/10 font-medium text-sm transition-colors border border-sky-500/20">
+          <span className="text-base">🤖</span>
+          <div className="flex-1 flex items-center justify-between">
+            <span>AI Copilot</span>
+            <span className="text-[10px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 rounded font-mono font-bold">GPT-4o</span>
+          </div>
+        </a>
         <a href="#guardrails" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#94a3b8] hover:text-white hover:bg-[#1a2332] font-medium text-sm transition-colors">
           <ShieldCheck size={18} className="text-emerald-400" />
           <span>PII & Guardrails</span>

@@ -10,7 +10,7 @@ interface Props {
 
 export default function DemoButton({ isRunning, onTriggerDemo }: Props) {
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-6 right-[205px] z-40">
       <button
         onClick={onTriggerDemo}
         disabled={isRunning}

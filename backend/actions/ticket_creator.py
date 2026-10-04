@@ -3,16 +3,25 @@ import time
 import uuid
 from datetime import datetime
 from backend.models.action_models import ActionRequest, ActionResult, ActionStatus
+from backend.services.swift_engine import SWIFTEngine
 
 
 class TicketCreatorHandler:
-    """Simulates creating an ITSM/ServiceNow support ticket."""
+    """Simulates creating an ITSM/ServiceNow support ticket with SWIFT MT599 logging."""
+
+    def __init__(self):
+        self.swift_engine = SWIFTEngine()
 
     def execute(self, request: ActionRequest) -> ActionResult:
-        time.sleep(0.5)
+        time.sleep(0.3)
 
         payload = request.payload or {}
         ticket_id = f"INC-{uuid.uuid4().hex[:6].upper()}"
+
+        swift_mt599 = self.swift_engine.generate_mt599(
+            reference=ticket_id,
+            narrative=f"ITSM ACCESS REQUEST {ticket_id}\nREQUESTOR: {payload.get('counterparty', 'John Doe')}\nROLES: {payload.get('action_type', 'Trade Entry')}",
+        )
 
         return ActionResult(
             action_id=f"TKT-{request.trace_id[:8]}",
@@ -34,6 +43,7 @@ class TicketCreatorHandler:
                 "portal_url": f"https://servicenow.internal.bank/nav_to.do?uri=incident.do?sys_id={ticket_id}",
                 "approval_required": False,
                 "ticket_status": "NEW",
+                "swift_mt599": swift_mt599,
                 "processed_at": datetime.utcnow().isoformat(),
             },
             executed_at=datetime.utcnow().isoformat(),

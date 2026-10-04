@@ -1,8 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
-import { Search, Filter, CheckCircle, Clock, AlertTriangle, FileDown, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { Search, Filter, CheckCircle, Clock, AlertTriangle, FileDown, ArrowUpRight, ShieldCheck, Award, Printer } from 'lucide-react';
 import { ProcessedEmailRecord } from '@/lib/demoData';
+import ComplianceCertificateModal from './ComplianceCertificateModal';
 
 interface Props {
   emails: ProcessedEmailRecord[];
@@ -12,6 +11,7 @@ interface Props {
 export default function AuditTrail({ emails, onSelectEmail }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [selectedCertEmail, setSelectedCertEmail] = useState<ProcessedEmailRecord | null>(null);
 
   const filtered = emails.filter((item) => {
     const matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
@@ -29,6 +29,12 @@ export default function AuditTrail({ emails, onSelectEmail }: Props) {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  const printFullAuditLedger = () => {
+    if (emails.length > 0) {
+      setSelectedCertEmail(emails[0]);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -69,12 +75,12 @@ export default function AuditTrail({ emails, onSelectEmail }: Props) {
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <ShieldCheck className="text-emerald-400" size={18} />
-            Regulatory Compliance Audit Ledger (Azure Cosmos DB)
+            Regulatory Compliance Audit Ledger (Azure Cosmos DB WORM)
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">Immutable trace records for FINRA / MiFID II back-office execution audit</p>
+          <p className="text-xs text-slate-400 mt-0.5">Immutable trace records for FINRA Rule 4511 &amp; MiFID II RTS 25 back-office execution audit</p>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {/* Search */}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -83,7 +89,7 @@ export default function AuditTrail({ emails, onSelectEmail }: Props) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Filter by Trace ID, subject..." 
-              className="bg-[#0b1120] border border-[#1e293b] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-48 md:w-60 transition-colors"
+              className="bg-[#0b1120] border border-[#1e293b] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-44 md:w-56 transition-colors"
             />
           </div>
 
@@ -99,6 +105,15 @@ export default function AuditTrail({ emails, onSelectEmail }: Props) {
             <option value="APPROVED">Supervisor Approved</option>
             <option value="REJECTED">Rejected</option>
           </select>
+
+          {/* Certificate View Button */}
+          <button 
+            onClick={printFullAuditLedger}
+            className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl px-3 py-1.5 text-xs font-medium transition-colors shadow-sm"
+          >
+            <Award size={14} />
+            MiFID II Audit Certificate
+          </button>
 
           {/* Export Button */}
           <button 
@@ -122,20 +137,25 @@ export default function AuditTrail({ emails, onSelectEmail }: Props) {
               <th className="px-4 py-3 font-semibold">PII Shield</th>
               <th className="px-4 py-3 font-semibold">Risk Rating</th>
               <th className="px-4 py-3 font-semibold">Execution Status</th>
-              <th className="px-4 py-3 font-semibold text-right">Inspect</th>
+              <th className="px-4 py-3 font-semibold text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e293b]">
             {filtered.map((item) => (
               <tr 
                 key={item.id}
-                onClick={() => onSelectEmail(item)}
-                className="hover:bg-[#1e293b]/50 transition-colors cursor-pointer group"
+                className="hover:bg-[#1e293b]/50 transition-colors group"
               >
-                <td className="px-4 py-3.5 font-mono text-sky-400 font-semibold whitespace-nowrap">
+                <td 
+                  onClick={() => onSelectEmail(item)}
+                  className="px-4 py-3.5 font-mono text-sky-400 font-semibold whitespace-nowrap cursor-pointer hover:underline"
+                >
                   {item.id}
                 </td>
-                <td className="px-4 py-3.5 max-w-[280px]">
+                <td 
+                  onClick={() => onSelectEmail(item)}
+                  className="px-4 py-3.5 max-w-[260px] cursor-pointer"
+                >
                   <div className="font-semibold text-white truncate group-hover:text-sky-400 transition-colors">
                     {item.subject}
                   </div>
@@ -163,15 +183,38 @@ export default function AuditTrail({ emails, onSelectEmail }: Props) {
                   {getStatusBadge(item.status)}
                 </td>
                 <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1 text-sky-400 font-medium group-hover:translate-x-0.5 transition-transform">
-                    View Diff <ArrowUpRight size={14} />
-                  </span>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCertEmail(item);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                      title="View MiFID II / FINRA Compliance Audit Certificate"
+                    >
+                      <Award size={12} /> Certificate
+                    </button>
+                    <button
+                      onClick={() => onSelectEmail(item)}
+                      className="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                    >
+                      Diff <ArrowUpRight size={12} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Compliance Certificate Modal */}
+      {selectedCertEmail && (
+        <ComplianceCertificateModal
+          email={selectedCertEmail}
+          onClose={() => setSelectedCertEmail(null)}
+        />
+      )}
     </div>
   );
 }
