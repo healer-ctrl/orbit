@@ -40,13 +40,3 @@ class ExtractedEntities(BaseModel):
     instrument_name: Optional[str] = None
     trade_id: Optional[str] = None
     action_type: Optional[str] = None
-    quantity: Optional[float] = None
-    clean_price: Optional[float] = None
-    gross_amount: Optional[float] = None
-    counterparty_bic: Optional[str] = None
-    beneficiary_account: Optional[str] = None
-    attachment_records: Optional[List[dict]] = None
-    signature_valid: Optional[bool] = None
-    attachment_checksum: Optional[str] = None
-    attachment_parsed: Optional[bool] = None
-

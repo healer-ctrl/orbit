@@ -163,17 +163,6 @@ class MailMindOrchestrator:
             risk_score = 1.0
             risk_level = "CRITICAL_INJECTION"
 
-        anomaly_info = {}
-        if hasattr(self.risk_scorer, "last_anomaly_result") and self.risk_scorer.last_anomaly_result:
-            res = self.risk_scorer.last_anomaly_result
-            anomaly_info = {
-                "anomaly_score": res.anomaly_score,
-                "risk_tags": res.risk_tags,
-                "dimension_scores": res.dimension_scores,
-                "recommendation": res.recommendation,
-                "explanations": res.explanations,
-            }
-
         steps.append(
             AgentStep(
                 agent_name="RiskScorerAgent",
@@ -182,7 +171,6 @@ class MailMindOrchestrator:
                     "risk_score": round(risk_score, 3),
                     "risk_level": risk_level,
                     "threshold": RISK_THRESHOLD,
-                    "anomaly_shield": anomaly_info,
                 },
                 started_at=r_start,
                 completed_at=datetime.utcnow().isoformat(),

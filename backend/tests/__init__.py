@@ -1,3 +1,0 @@
-"""
-MailMind Backend Test Suite
-"""

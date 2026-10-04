@@ -1,1 +1,0 @@
-"""MailMind Backend Package."""

@@ -12,7 +12,6 @@ import EmailDetailModal from '@/components/EmailDetailModal';
 import DailyOpsReport from '@/components/DailyOpsReport';
 import SOPBrowser from '@/components/SOPBrowser';
 import GuardrailPlayground from '@/components/GuardrailPlayground';
-import OperationsCopilot from '@/components/OperationsCopilot';
 import { INITIAL_EMAILS, ProcessedEmailRecord } from '@/lib/demoData';
 import { Layers, ShieldCheck, BarChart3, BookOpen, FileSearch, Inbox, CheckCircle2 } from 'lucide-react';
 
@@ -225,14 +224,6 @@ export default function Home() {
       <DemoButton 
         isRunning={isSimulating} 
         onTriggerDemo={handleTriggerDemo} 
-      />
-
-      {/* Interactive Back-Office AI Copilot & Query Assistant */}
-      <OperationsCopilot 
-        emails={emails}
-        onSelectEmail={(e) => setSelectedEmail(e)}
-        onApproveEmail={handleApprove}
-        onRejectEmail={handleReject}
       />
 
       {/* Interactive Detail & Diff Modal */}

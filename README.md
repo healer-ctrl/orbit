@@ -97,36 +97,18 @@
 
 2. **🤖 Multi-Agent AI Pipeline**:
    - **Classifier Agent**: 5 domain intents (`CORPORATE_ACTION`, `SETTLEMENT`, `TRADE_LINKAGE`, `INSTRUMENT_CORRECTION`, `SUPPORT_TICKET`).
-   - **Parser Agent**: Multi-modal extraction across email bodies, PDFs, TIFFs, and CSV trade confirmations with digital signature verification.
+   - **Parser Agent**: Extracts and normalizes trade numbers, amounts, currencies, and counterparties.
    - **Decision Agent**: Ingests Standard Operating Procedures (SOPs) from **Azure AI Search** for grounded resolutions.
-   - **Risk Scorer Agent**: Evaluates financial exposure, T+1 cutoffs, and data confidence with built-in statistical anomaly detection.
+   - **Risk Scorer Agent**: Evaluates financial exposure, T+1 cutoffs, and data confidence.
 
-3. **⚡ SWIFT ISO 15022 & ISO 20022 Financial Messaging Engine**:
-   - Generates and parses both legacy SWIFT MT (`MT564`, `MT544`, `MT566`, `MT599`) and modern ISO 20022 XML (`seev.031`, `pacs.008`, `camt.053`).
-   - ISO 6166 Luhn check digit validation for ISINs and SWIFT Block 1-5 envelope formatting.
-
-4. **🛡️ Real-Time Anomaly & Counterparty Fraud Shield**:
-   - Statistical $>3\sigma$ off-market trade deviation detector against historical counterparty profiles.
-   - Real-time settlement cutoff countdown tracking (TARGET2, Euroclear, Fedwire).
-   - Tax haven & offshore secrecy jurisdiction routing detector.
-
-5. **🎙️ Back-Office Operations Copilot**:
-   - Interactive natural language operations query assistant with voice input & speech synthesis.
-   - Deep settlement exception inspection, SOP runbook lookup, and 1-click HITL supervisor authorization.
-
-6. **📜 Regulatory Compliance Ledger & MiFID II / FINRA Audit Reports**:
-   - MiFID II RTS 25 microsecond-precision UTC clock synchronization (Stratum-1 PTP traceable).
-   - FINRA Rule 4511 & SEC 17a-4 compliant immutable WORM record retention metadata.
-   - SHA-256 state lineage DAG & downloadable Société Générale compliance certificate.
-
-7. **👥 Risk-Based Human-in-the-Loop (HITL)**:
+3. **👥 Risk-Based Human-in-the-Loop (HITL)**:
    - Low-risk transactions execute autonomously in milliseconds.
    - High-value transactions (> €1M / urgent cutoffs) generate **Microsoft Teams Adaptive Cards** for supervisor sign-off.
 
-8. **📊 Enterprise Compliance & Audit**:
-   - **Azure Cosmos DB** stores full audit records (trace ID, raw vs sanitized payload, model telemetry, and approval records).
+4. **📊 Enterprise Compliance & Audit**:
+   - **Azure Cosmos DB** stores full audit records (trace ID, raw vs sanitized payload, model telemetry, and approval records) satisfying regulatory requirements (FINRA / MiFID II).
 
-9. **💻 Real-Time Operations Dashboard**:
+5. **💻 Real-Time Operations Dashboard**:
    - Next.js 14 dark-theme dashboard with Bloomberg-inspired UX, live agent pipeline animations, and approval queue.
 
 ---
