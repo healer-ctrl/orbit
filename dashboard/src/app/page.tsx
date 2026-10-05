@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatsCards from '@/components/StatsCards';
 import EmailFeed from '@/components/EmailFeed';
 import RiskGauge from '@/components/RiskGauge';
@@ -22,6 +22,33 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'hub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability'>('hub');
   const [isSimulating, setIsSimulating] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Synchronize sidebar navigation clicks
+  useEffect(() => {
+    const handleNavigate = (e: any) => {
+      const { tab, sectionId } = e.detail || {};
+      if (tab) {
+        setActiveTab(tab);
+      }
+      if (sectionId) {
+        setTimeout(() => {
+          const el = document.getElementById(sectionId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 120);
+      }
+    };
+    window.addEventListener('orbit:navigate', handleNavigate);
+    return () => window.removeEventListener('orbit:navigate', handleNavigate);
+  }, []);
+
+  const handleTabClick = (tab: 'hub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('orbit:tab-changed', { detail: { tab } }));
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -99,7 +126,7 @@ export default function Home() {
       {/* Section Navigation Tabs */}
       <div className="flex border-b border-[#1e293b] gap-2 overflow-x-auto pb-1">
         <button
-          onClick={() => setActiveTab('hub')}
+          onClick={() => handleTabClick('hub')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
             activeTab === 'hub'
               ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 shadow-sm'
@@ -110,7 +137,7 @@ export default function Home() {
         </button>
 
         <button
-          onClick={() => setActiveTab('guardrails')}
+          onClick={() => handleTabClick('guardrails')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
             activeTab === 'guardrails'
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
@@ -121,7 +148,7 @@ export default function Home() {
         </button>
 
         <button
-          onClick={() => setActiveTab('daily')}
+          onClick={() => handleTabClick('daily')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
             activeTab === 'daily'
               ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 shadow-sm'
@@ -132,7 +159,7 @@ export default function Home() {
         </button>
 
         <button
-          onClick={() => setActiveTab('sops')}
+          onClick={() => handleTabClick('sops')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
             activeTab === 'sops'
               ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40 shadow-sm'
@@ -143,7 +170,7 @@ export default function Home() {
         </button>
 
         <button
-          onClick={() => setActiveTab('audit')}
+          onClick={() => handleTabClick('audit')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
             activeTab === 'audit'
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
@@ -154,7 +181,7 @@ export default function Home() {
         </button>
 
         <button
-          onClick={() => setActiveTab('observability')}
+          onClick={() => handleTabClick('observability')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
             activeTab === 'observability'
               ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
@@ -171,7 +198,7 @@ export default function Home() {
           {/* Main 2-Column Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Email Feed (2 Cols) */}
-            <div className="lg:col-span-2">
+            <div id="overview" className="lg:col-span-2">
               <EmailFeed 
                 emails={emails} 
                 onSelectEmail={(e) => setSelectedEmail(e)} 
@@ -179,7 +206,7 @@ export default function Home() {
             </div>
 
             {/* Right: Risk Meter & Approval Queue (1 Col) */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            <div id="hitl" className="lg:col-span-1 flex flex-col gap-6">
               <RiskGauge score={avgRisk} />
               <ApprovalQueue 
                 pendingEmails={pendingEmails} 
@@ -191,40 +218,44 @@ export default function Home() {
           </div>
 
           {/* Multi-Agent Animated Pipeline */}
-          <AgentPipeline />
+          <div id="pipeline">
+            <AgentPipeline />
+          </div>
 
           {/* Inline Compliance Table */}
-          <AuditTrail 
-            emails={emails} 
-            onSelectEmail={(e) => setSelectedEmail(e)} 
-          />
+          <div id="audit">
+            <AuditTrail 
+              emails={emails} 
+              onSelectEmail={(e) => setSelectedEmail(e)} 
+            />
+          </div>
         </div>
       )}
 
       {/* TAB 2: PII GUARDRAIL PLAYGROUND */}
       {activeTab === 'guardrails' && (
-        <div className="animate-fadeIn">
+        <div id="guardrails" className="animate-fadeIn">
           <GuardrailPlayground />
         </div>
       )}
 
       {/* TAB 3: DAILY OPS REPORT */}
       {activeTab === 'daily' && (
-        <div className="animate-fadeIn">
+        <div id="daily" className="animate-fadeIn">
           <DailyOpsReport />
         </div>
       )}
 
       {/* TAB 4: SOP RUNBOOKS */}
       {activeTab === 'sops' && (
-        <div className="animate-fadeIn">
+        <div id="sops" className="animate-fadeIn">
           <SOPBrowser />
         </div>
       )}
 
       {/* TAB 5: AUDIT LEDGER */}
       {activeTab === 'audit' && (
-        <div className="animate-fadeIn">
+        <div id="audit" className="animate-fadeIn">
           <AuditTrail 
             emails={emails} 
             onSelectEmail={(e) => setSelectedEmail(e)} 
@@ -234,7 +265,7 @@ export default function Home() {
 
       {/* TAB 6: SRE OBSERVABILITY & HEALTH */}
       {activeTab === 'observability' && (
-        <div className="animate-fadeIn">
+        <div id="observability" className="animate-fadeIn">
           <ObservabilityDashboard />
         </div>
       )}
