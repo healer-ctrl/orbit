@@ -1,10 +1,12 @@
 import os
+import time
 import logging
+from typing import Dict, Any
 from dotenv import load_dotenv
 
 load_dotenv()
 
-logger = logging.getLogger("orbit.config")
+logger = logging.getLogger("mailmind.config")
 
 # Azure Key Vault Configuration
 AZURE_KEY_VAULT_NAME = os.getenv("AZURE_KEY_VAULT_NAME", "orbit-vault-3207")
@@ -12,6 +14,7 @@ AZURE_KEY_VAULT_URI = os.getenv("AZURE_KEY_VAULT_URI", f"https://{AZURE_KEY_VAUL
 
 _vault_client = None
 _secret_cache = {}
+
 
 def get_key_vault_client():
     """Initializes Azure Key Vault SecretClient using DefaultAzureCredential with graceful fallback."""
@@ -27,6 +30,39 @@ def get_key_vault_client():
             logger.warning("Azure Key Vault SecretClient initialization skipped: %s", e)
             _vault_client = False
     return _vault_client if _vault_client is not False else None
+
+
+def ping_key_vault() -> Dict[str, Any]:
+    """Health probe check for Azure Key Vault reachability."""
+    start = time.time()
+    if not AZURE_KEY_VAULT_URI:
+        return {"status": "unconfigured", "latency_ms": 0, "uri": None}
+
+    client = get_key_vault_client()
+    if client:
+        try:
+            # Probe vault metadata/properties
+            client.get_secret("health-probe-check")
+            latency = int((time.time() - start) * 1000)
+            return {"status": "healthy", "latency_ms": latency, "vault_uri": AZURE_KEY_VAULT_URI}
+        except Exception as e:
+            latency = int((time.time() - start) * 1000)
+            # If secret not found (404), vault is still reachable and healthy
+            if "ResourceNotFound" in str(e) or "SecretNotFound" in str(e) or "404" in str(e):
+                return {"status": "healthy", "latency_ms": latency, "vault_uri": AZURE_KEY_VAULT_URI}
+            return {
+                "status": "degraded",
+                "latency_ms": latency,
+                "vault_uri": AZURE_KEY_VAULT_URI,
+                "error": str(e),
+                "fallback": "env_vars_active",
+            }
+    return {
+        "status": "env_fallback_active",
+        "latency_ms": int((time.time() - start) * 1000),
+        "vault_uri": AZURE_KEY_VAULT_URI,
+    }
+
 
 def get_secret(secret_name: str, default: str = None) -> str:
     """
@@ -60,6 +96,7 @@ def get_secret(secret_name: str, default: str = None) -> str:
 
     return ""
 
+
 # Core Services & Credentials (resolved via Azure Key Vault / Environment)
 AZURE_OPENAI_ENDPOINT = get_secret("AZURE_OPENAI_ENDPOINT", "https://mailmind-openai-3207.openai.azure.com/")
 AZURE_OPENAI_KEY = get_secret("AZURE_OPENAI_KEY", "")
@@ -79,4 +116,3 @@ GRAPH_TENANT_ID = get_secret("GRAPH_TENANT_ID", "")
 TEAMS_WEBHOOK_URL = get_secret("TEAMS_WEBHOOK_URL", "https://societegenerale.webhook.office.com/webhookb2/mock-approval")
 
 RISK_THRESHOLD = float(get_secret("RISK_THRESHOLD", "0.7"))
-

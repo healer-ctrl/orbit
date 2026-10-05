@@ -6,8 +6,8 @@ import Sidebar from '@/components/Sidebar';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'MailMind - Intelligent Financial Email Automation',
-  description: 'AI-powered email classification and automation for financial operations.',
+  title: 'Orbit - Intelligent Financial Email Automation',
+  description: 'AI-powered email classification, PII guardrails, and autonomous settlement for capital markets.',
 };
 
 export default function RootLayout({

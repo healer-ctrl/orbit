@@ -1,11 +1,11 @@
 import logging
+import time
 from typing import List, Dict, Any, Optional
 from backend.config import AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_KEY
+from backend.resilience import resilience_registry, retry_with_backoff, CircuitBreakerOpenException
+from backend.telemetry import get_tracer
 
-logger = logging.getLogger("mailmind.search")
-
-
-# ── Built-in Capital Markets Institutional Knowledge Base ─────────────────────
+logger = logging.getLogger("mailmind.services.search")
 
 CAPITAL_MARKETS_SOPS = [
     {
@@ -82,65 +82,116 @@ class SearchService:
     """
     Azure AI Search & Semantic Knowledge Retrieval Service.
     Retrieves relevant SOPs, similar historical trade resolutions, and reference master data.
+    Equipped with OpenTelemetry distributed tracing and resilient Circuit Breakers.
     """
 
     def __init__(self):
         self.endpoint = AZURE_SEARCH_ENDPOINT
         self.key = AZURE_SEARCH_KEY
         self.client = None
+        self.breaker = resilience_registry.get_breaker("azure_search")
+        self.tracer = get_tracer()
 
         if self.endpoint and self.key:
             try:
                 from azure.core.credentials import AzureKeyCredential
                 from azure.search.documents import SearchClient
-                # We can connect to specific indices if needed
-                logger.info("Azure AI Search endpoint configured: %s", self.endpoint)
+                logger.info("Azure AI Search configured: %s", self.endpoint)
             except Exception as e:
                 logger.warning("Azure AI Search SDK initialization warning: %s", e)
 
+    def ping(self) -> Dict[str, Any]:
+        """Deep health check for Azure AI Search probe."""
+        start = time.time()
+        if not self.endpoint:
+            return {"status": "mock_mode", "latency_ms": 0, "endpoint": "local_resilient_store"}
+        try:
+            # Check circuit state
+            if self.breaker.state.value == "OPEN":
+                return {
+                    "status": "circuit_open",
+                    "latency_ms": int((time.time() - start) * 1000),
+                    "endpoint": self.endpoint,
+                    "details": "Azure AI Search circuit is OPEN",
+                }
+            import httpx
+            headers = {"api-key": self.key} if self.key else {}
+            # Quick lightweight metadata ping
+            resp = httpx.get(f"{self.endpoint}/servicestats?api-version=2023-11-01", headers=headers, timeout=3.0)
+            latency = int((time.time() - start) * 1000)
+            if resp.status_code in [200, 401, 403]:  # Reachable endpoint
+                return {"status": "healthy", "latency_ms": latency, "endpoint": self.endpoint}
+            return {"status": "degraded", "latency_ms": latency, "http_status": resp.status_code}
+        except Exception as e:
+            return {
+                "status": "degraded",
+                "latency_ms": int((time.time() - start) * 1000),
+                "error": str(e),
+                "fallback": "built_in_sops_active",
+            }
+
     def search_similar_emails(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
         """Finds historically resolved operations emails with similar semantic context."""
-        query_lower = query.lower()
-        results = []
-        for item in HISTORICAL_EMAIL_ARCHIVE:
-            score = 0.5
-            if any(word in query_lower for word in item["subject"].lower().split()):
-                score += 0.35
-            results.append({**item, "similarity_score": min(0.98, score)})
+        with self.tracer.start_as_current_span("azure_search.search_similar_emails") as span:
+            span.set_attribute("search.query_length", len(query))
+            span.set_attribute("search.top_k", top_k)
 
-        results.sort(key=lambda x: x["similarity_score"], reverse=True)
-        return results[:top_k]
+            query_lower = query.lower()
+            results = []
+            for item in HISTORICAL_EMAIL_ARCHIVE:
+                score = 0.5
+                if any(word in query_lower for word in item["subject"].lower().split()):
+                    score += 0.35
+                results.append({**item, "similarity_score": min(0.98, score)})
+
+            results.sort(key=lambda x: x["similarity_score"], reverse=True)
+            span.set_attribute("search.results_count", len(results[:top_k]))
+            return results[:top_k]
 
     def search_sops(self, intent_or_query: str, top_k: int = 2) -> List[Dict[str, Any]]:
         """Retrieves applicable Standard Operating Procedures (SOPs) based on intent or query terms."""
-        q_lower = intent_or_query.lower()
-        scored_sops = []
+        with self.tracer.start_as_current_span("azure_search.search_sops") as span:
+            span.set_attribute("search.intent", intent_or_query)
+            span.set_attribute("search.top_k", top_k)
 
-        for sop in CAPITAL_MARKETS_SOPS:
-            score = 0.2
-            if sop["domain"].lower() in q_lower:
-                score += 0.6
-            for kw in sop["keywords"]:
-                if kw in q_lower:
-                    score += 0.15
-            scored_sops.append({**sop, "relevance_score": min(0.99, score)})
+            q_lower = intent_or_query.lower()
+            scored_sops = []
 
-        scored_sops.sort(key=lambda x: x["relevance_score"], reverse=True)
-        return scored_sops[:top_k]
+            for sop in CAPITAL_MARKETS_SOPS:
+                score = 0.2
+                if sop["domain"].lower() in q_lower:
+                    score += 0.6
+                for kw in sop["keywords"]:
+                    if kw in q_lower:
+                        score += 0.15
+                scored_sops.append({**sop, "relevance_score": min(0.99, score)})
+
+            scored_sops.sort(key=lambda x: x["relevance_score"], reverse=True)
+            span.set_attribute("search.sops_count", len(scored_sops[:top_k]))
+            return scored_sops[:top_k]
 
     def search_reference_data(self, entity_query: str) -> Dict[str, Any]:
         """Looks up securities or counterparty reference data by ISIN, CUSIP, or BIC."""
-        q_clean = entity_query.strip().upper()
-        if q_clean in REFERENCE_DATA_REGISTRY:
-            return {"query": q_clean, "found": True, "details": REFERENCE_DATA_REGISTRY[q_clean]}
+        with self.tracer.start_as_current_span("azure_search.search_reference_data") as span:
+            span.set_attribute("search.entity_query", entity_query)
+            q_clean = entity_query.strip().upper()
 
-        for k, v in REFERENCE_DATA_REGISTRY.items():
-            if k in q_clean or (isinstance(v, dict) and v.get("name", "").upper() in q_clean):
-                return {"query": entity_query, "found": True, "details": v, "key": k}
+            if q_clean in REFERENCE_DATA_REGISTRY:
+                span.set_attribute("search.found", True)
+                return {"query": q_clean, "found": True, "details": REFERENCE_DATA_REGISTRY[q_clean]}
 
-        return {"query": entity_query, "found": False, "details": {}}
+            for k, v in REFERENCE_DATA_REGISTRY.items():
+                if k in q_clean or (isinstance(v, dict) and v.get("name", "").upper() in q_clean):
+                    span.set_attribute("search.found", True)
+                    return {"query": entity_query, "found": True, "details": v, "key": k}
+
+            span.set_attribute("search.found", False)
+            return {"query": entity_query, "found": False, "details": {}}
 
     def index_email(self, email_data: dict) -> bool:
         """Indexes processed email into the searchable institutional knowledge base."""
-        logger.info("Indexed email %s into Search archive", email_data.get("id"))
-        return True
+        with self.tracer.start_as_current_span("azure_search.index_email") as span:
+            email_id = email_data.get("id", "unknown")
+            span.set_attribute("email.id", email_id)
+            logger.info("Indexed email %s into Search archive", email_id)
+            return True

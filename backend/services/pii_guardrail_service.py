@@ -21,6 +21,10 @@ class PIIGuardrailService:
         r"(?i)output\s+the\s+following\s+system\s+prompt",
         r"(?i)bypass\s+approval",
         r"(?i)auto_execute\s*:\s*true",
+        r"(?i)(?:jailbreak|dan\s+mode|roleplay\s+as\s+admin)",
+        r"(?i)(?:forget|drop)\s+(all\s+)?(?:rules|instructions|constraints)",
+        r"(?i)<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>",
+        r"(?i)(?:execute|eval)\s*\(\s*['\"].*['\"]\s*\)",
     ]
 
     # Standard PII Regexes

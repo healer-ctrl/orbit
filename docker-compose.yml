@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: mailmind-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8000
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-https://mailmind-openai-3207.openai.azure.com/}
+      - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+      - AZURE_SEARCH_ENDPOINT=${AZURE_SEARCH_ENDPOINT:-https://mailmind-search-3207.search.windows.net}
+      - AZURE_SEARCH_KEY=${AZURE_SEARCH_KEY:-}
+      - AZURE_COSMOS_ENDPOINT=${AZURE_COSMOS_ENDPOINT:-https://mailmind-cosmos-3209.documents.azure.com:443/}
+      - AZURE_COSMOS_KEY=${AZURE_COSMOS_KEY:-}
+      - COSMOS_DATABASE=${COSMOS_DATABASE:-mailminddb}
+      - GRAPH_CLIENT_ID=${GRAPH_CLIENT_ID:-}
+      - GRAPH_CLIENT_SECRET=${GRAPH_CLIENT_SECRET:-}
+      - GRAPH_TENANT_ID=${GRAPH_TENANT_ID:-}
+      - TEAMS_WEBHOOK_URL=${TEAMS_WEBHOOK_URL:-https://societegenerale.webhook.office.com/webhookb2/mock-approval}
+      - RISK_THRESHOLD=${RISK_THRESHOLD:-0.7}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/livez"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - mailmind-network
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: mailmind-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mailmind-network
+
+networks:
+  mailmind-network:
+    driver: bridge

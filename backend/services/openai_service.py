@@ -1,12 +1,14 @@
 import json
 import logging
+from typing import Optional, Dict, Any
+
 from openai import AzureOpenAI
 from backend.config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY, AZURE_OPENAI_DEPLOYMENT
 from backend.models.email_models import IncomingEmail, ClassifiedEmail, ExtractedEntities, Intent, Urgency
+from backend.resilience import resilience_registry, retry_with_backoff, CircuitBreakerOpenException
+from backend.telemetry import get_tracer
 
-logger = logging.getLogger(__name__)
-
-# ── Domain-expert system prompts ─────────────────────────────────────────────
+logger = logging.getLogger("mailmind.services.openai")
 
 CLASSIFIER_SYSTEM_PROMPT = """You are MailMind, a senior capital markets operations AI analyst at a tier-1 investment bank.
 You have 20+ years of experience in post-trade operations, corporate actions processing, and settlement workflows.
@@ -51,17 +53,6 @@ Return a JSON object with exactly these fields:
   "urgency": "<HIGH if deadline <24h or contains URGENT/FAILED, MEDIUM if deadline <1 week, LOW otherwise>",
   "reasoning": "<one sentence explaining your classification>"
 }
-
-## Few-shot examples:
-
-EMAIL: "Subject: SWIFT MT564 - SAP SE Dividend EUR 2.20 per share - Ex 2024-05-18"
-→ {"intent": "CORPORATE_ACTION", "confidence": 0.98, "urgency": "MEDIUM", "reasoning": "SWIFT MT564 corporate action notification for a mandatory cash dividend event."}
-
-EMAIL: "Subject: URGENT - Trade TRD-887612 failed matching - SSI mismatch with JPM"
-→ {"intent": "SETTLEMENT", "confidence": 0.97, "urgency": "HIGH", "reasoning": "Failed trade requiring immediate SSI correction with a same-day deadline."}
-
-EMAIL: "Subject: Please link trade TRD-2024-88712 to CUSIP 037833100"
-→ {"intent": "TRADE_LINKAGE", "confidence": 0.95, "urgency": "LOW", "reasoning": "Routine trade-to-instrument linkage request."}
 """
 
 ENTITY_EXTRACTION_PROMPT = """You are a financial entity extraction specialist. Extract ALL relevant financial entities from the email.
@@ -80,14 +71,6 @@ Return a JSON object with these fields (use null for any field not found):
   "trade_id": "<trade identifier, e.g. TRD-2024-88712>",
   "action_type": "<specific action: CASH_DIVIDEND, STOCK_SPLIT, SSI_UPDATE, TRADE_LINK, ISIN_REMAP, ACCESS_REQUEST, etc.>"
 }
-
-Extraction rules:
-- ISIN format: 2-letter country code + 9 alphanumeric + 1 check digit (e.g. DE0007164600, US0378331005)
-- CUSIP format: 9 alphanumeric characters (e.g. 037833100)
-- SEDOL format: 7 alphanumeric characters
-- BIC/SWIFT format: 8 or 11 characters (e.g. CHASUS33)
-- Amounts: extract numeric value, handle comma/period separators, handle M/K/B suffixes ($1.5M → 1500000)
-- Dates: convert all dates to ISO 8601 format
 """
 
 DECISION_PROMPT = """You are the MailMind Decision Agent. Given the classified email, extracted entities, similar historical emails, and relevant SOPs, determine the exact action(s) to take.
@@ -104,27 +87,11 @@ Return a JSON object:
   "similar_resolution": "<how similar past emails were resolved, if any>",
   "confidence": <float 0.0-1.0>
 }
-
-Decision guidelines:
-- CORPORATE_ACTION → Create event in corporate actions system, notify positions team
-- SETTLEMENT (failed) → Correct SSI, resubmit instruction, escalate if past deadline
-- TRADE_LINKAGE → Update trade-instrument mapping in booking system
-- INSTRUMENT_CORRECTION → Patch reference data, notify affected positions
-- SUPPORT_TICKET → Create ticket in ITSM system with proper categorization
 """
 
 RISK_SCORING_PROMPT = """You are the MailMind Risk Scoring Agent. Evaluate the operational risk of auto-executing the proposed action.
 
 Score from 0.0 (no risk, safe to auto-execute) to 1.0 (maximum risk, must have human approval).
-
-Risk signals to evaluate:
-- **Financial exposure**: Amount > €1M = high risk, Amount > €100K = medium risk
-- **Deadline pressure**: < 2 hours = critical, < 24 hours = high, < 1 week = medium
-- **Classification confidence**: < 0.85 confidence = elevated risk
-- **Action reversibility**: Can the action be undone? SSI changes = reversible, payments = irreversible
-- **Counterparty sensitivity**: Major counterparty (JPM, GS, MS, etc.) = elevated scrutiny
-- **Novelty**: First time seeing this pattern = elevated risk
-- **Regulatory impact**: Cross-border, sanctions-related = high risk
 
 Return JSON:
 {
@@ -138,24 +105,33 @@ Return JSON:
 
 class OpenAIService:
     def __init__(self):
+        self.breaker = resilience_registry.get_breaker("azure_openai")
+        self.tracer = get_tracer()
+
         if AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_KEY:
-            self.client = AzureOpenAI(
-                api_version="2024-12-01-preview",
-                azure_endpoint=AZURE_OPENAI_ENDPOINT,
-                api_key=AZURE_OPENAI_KEY,
-            )
-            logger.info("Azure OpenAI client initialized (endpoint: %s)", AZURE_OPENAI_ENDPOINT)
+            try:
+                self.client = AzureOpenAI(
+                    api_version="2024-12-01-preview",
+                    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+                    api_key=AZURE_OPENAI_KEY,
+                    max_retries=0,  # We manage retries via our resilient Circuit Breaker
+                    timeout=10.0,
+                )
+                logger.info("Azure OpenAI client initialized (endpoint: %s)", AZURE_OPENAI_ENDPOINT)
+            except Exception as e:
+                self.client = None
+                logger.warning("Azure OpenAI initialization failed: %s", e)
         else:
             self.client = None
-            logger.warning("Azure OpenAI credentials not set — running in mock mode")
+            logger.warning("Azure OpenAI credentials not set — running in resilient domain engine mode")
 
-    # ── helpers ───────────────────────────────────────────────────────────
+    def _execute_chat_call(self, system: str, user: str) -> dict:
+        """Raw Azure OpenAI chat completion call protected by OpenTelemetry span."""
+        with self.tracer.start_as_current_span("azure_openai.chat_completion") as span:
+            span.set_attribute("gen_ai.system", "azure_openai")
+            span.set_attribute("gen_ai.request.model", AZURE_OPENAI_DEPLOYMENT)
+            span.set_attribute("gen_ai.endpoint", AZURE_OPENAI_ENDPOINT or "mock")
 
-    def _chat(self, system: str, user: str) -> dict:
-        """Send a chat completion request and return parsed JSON with fallback on error."""
-        if not self.client:
-            return {}
-        try:
             response = self.client.chat.completions.create(
                 model=AZURE_OPENAI_DEPLOYMENT,
                 messages=[
@@ -163,9 +139,26 @@ class OpenAIService:
                     {"role": "user", "content": user},
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.1,  # low temperature for deterministic ops decisions
+                temperature=0.1,
             )
-            return json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content
+            span.set_attribute("gen_ai.response.length", len(content or ""))
+            return json.loads(content)
+
+    @retry_with_backoff(max_retries=2, base_delay=0.3, max_delay=3.0)
+    def _chat_with_retry(self, system: str, user: str) -> dict:
+        """Executes chat completion with Circuit Breaker and retry wrapper."""
+        return self.breaker.call(self._execute_chat_call, system, user)
+
+    def _chat(self, system: str, user: str) -> dict:
+        """Safe wrapper with circuit breaker fast-fail and heuristic fallback."""
+        if not self.client:
+            return {}
+        try:
+            return self._chat_with_retry(system, user)
+        except CircuitBreakerOpenException as cbe:
+            logger.warning("Azure OpenAI Circuit Breaker OPEN (%s). Falling back to domain heuristics.", cbe)
+            return {}
         except Exception as e:
             logger.warning("Azure OpenAI API call failed (%s). Falling back to domain intelligence engine.", e)
             return {}
@@ -178,8 +171,6 @@ class OpenAIService:
             f"Received: {email.received_at}\n"
             f"Body:\n{email.body}"
         )
-
-    # ── Classify ──────────────────────────────────────────────────────────
 
     def classify_email(self, email: IncomingEmail) -> ClassifiedEmail:
         res = self._chat(CLASSIFIER_SYSTEM_PROMPT, self._email_to_text(email))
@@ -194,7 +185,7 @@ class OpenAIService:
             except Exception:
                 pass
 
-        # High-accuracy domain intelligence engine
+        # High-accuracy domain intelligence engine fallback
         subject_lower = email.subject.lower()
         body_lower = (email.subject + " " + email.body).lower()
 
@@ -213,8 +204,6 @@ class OpenAIService:
 
         return ClassifiedEmail(**email.model_dump(), intent=intent, confidence=conf, urgency=urg)
 
-    # ── Extract Entities ──────────────────────────────────────────────────
-
     def extract_entities(self, email: ClassifiedEmail) -> ExtractedEntities:
         res = self._chat(ENTITY_EXTRACTION_PROMPT, self._email_to_text(email))
         if res:
@@ -222,25 +211,34 @@ class OpenAIService:
             if filtered:
                 return ExtractedEntities(**filtered)
 
-        # High-accuracy financial regex extraction
+        # Financial regex extraction fallback
         import re
         body = email.subject + " " + email.body
         isin_match = re.search(r'\b[A-Z]{2}[A-Z0-9]{9}[0-9]\b', body)
         cusip_match = re.search(r'\b[0-9]{3}[A-Z0-9]{5}[0-9]\b', body)
         trade_match = re.search(r'\b(?:TRD|TXN|DEAL)[-\s]?[A-Z0-9-]+\b', body)
-        amount_match = re.search(r'[\$€£]?\s*([\d,]+\.?\d*)\s*(?:million|m|k|b)?\b', body, re.IGNORECASE)
+
+        # Exclude ISIN and date numbers from amount matching
+        clean_body = re.sub(r'\b[A-Z]{2}[A-Z0-9]{9}[0-9]\b', '', body)
+        clean_body = re.sub(r'\b\d{4}-\d{2}-\d{2}\b', '', clean_body)
+
+        amount_match = re.search(
+            r'(?:(?:EUR|USD|GBP|CHF|[\$€£])\s*([\d,]+(?:\.\d+)?)\s*(million|billion|m|k|b)?|(?:value|amount|size|dividend of|dividend)\s*(?:EUR|USD|GBP|CHF|[\$€£])?\s*([\d,]+(?:\.\d+)?)\s*(million|billion|m|k|b)?)',
+            clean_body,
+            re.IGNORECASE,
+        )
 
         amount = None
         if amount_match:
             try:
-                raw_amt = amount_match.group(1).replace(',', '')
+                raw_amt = (amount_match.group(1) or amount_match.group(3)).replace(',', '')
                 val = float(raw_amt)
-                full_match = amount_match.group(0).lower()
-                if 'm' in full_match or 'million' in full_match:
+                unit = (amount_match.group(2) or amount_match.group(4) or "").lower()
+                if 'm' in unit or 'million' in unit:
                     val *= 1_000_000
-                elif 'k' in full_match:
+                elif 'k' in unit:
                     val *= 1_000
-                elif 'b' in full_match:
+                elif 'b' in unit or 'billion' in unit:
                     val *= 1_000_000_000
                 amount = val
             except Exception:
@@ -257,8 +255,6 @@ class OpenAIService:
             currency=currency,
             counterparty=counterparty,
         )
-
-    # ── Decide Action ─────────────────────────────────────────────────────
 
     def make_decision(self, email: ClassifiedEmail, entities: ExtractedEntities, similar_emails: list, sops: list) -> dict:
         context = (
@@ -280,8 +276,6 @@ class OpenAIService:
         }
         return action_map.get(email.intent, {"recommended_action": "ESCALATE_TO_SUPERVISOR", "reasoning": "Manual operator review required"})
 
-    # ── Score Risk ────────────────────────────────────────────────────────
-
     def score_risk(self, email: ClassifiedEmail, entities: ExtractedEntities, decision: dict) -> float:
         context = (
             f"{self._email_to_text(email)}\n\n"
@@ -296,21 +290,20 @@ class OpenAIService:
                 pass
 
         # Advanced Financial Risk Scoring Model
-        score = 0.25  # Base operational baseline
+        score = 0.25
         if entities.amount:
             if entities.amount >= 2_000_000:
-                score += 0.45  # High financial exposure threshold (> €2M)
+                score += 0.45
             elif entities.amount >= 1_000_000:
-                score += 0.30  # Medium-high financial exposure threshold (> €1M)
+                score += 0.30
             elif entities.amount >= 100_000:
                 score += 0.15
 
         if email.urgency == Urgency.HIGH:
             score += 0.20
         if email.intent == Intent.SETTLEMENT and "failed" in email.subject.lower():
-            score += 0.15  # Settlement failures have strict cutoff penalties
+            score += 0.15
         if email.confidence < 0.85:
             score += 0.15
 
         return min(1.0, score)
-

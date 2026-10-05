@@ -23,7 +23,7 @@ export default function Sidebar() {
             🧠
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg tracking-tight">MailMind</h1>
+            <h1 className="text-white font-bold text-lg tracking-tight">Orbit</h1>
             <p className="text-[11px] text-[#94a3b8] font-medium flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
               Société Générale
