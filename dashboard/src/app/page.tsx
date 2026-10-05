@@ -12,13 +12,14 @@ import EmailDetailModal from '@/components/EmailDetailModal';
 import DailyOpsReport from '@/components/DailyOpsReport';
 import SOPBrowser from '@/components/SOPBrowser';
 import GuardrailPlayground from '@/components/GuardrailPlayground';
+import ObservabilityDashboard from '@/components/ObservabilityDashboard';
 import { INITIAL_EMAILS, ProcessedEmailRecord } from '@/lib/demoData';
-import { Layers, ShieldCheck, BarChart3, BookOpen, FileSearch, Inbox, CheckCircle2 } from 'lucide-react';
+import { Layers, ShieldCheck, BarChart3, BookOpen, FileSearch, Inbox, CheckCircle2, Activity } from 'lucide-react';
 
 export default function Home() {
   const [emails, setEmails] = useState<ProcessedEmailRecord[]>(INITIAL_EMAILS);
   const [selectedEmail, setSelectedEmail] = useState<ProcessedEmailRecord | null>(null);
-  const [activeTab, setActiveTab] = useState<'hub' | 'guardrails' | 'daily' | 'sops' | 'audit'>('hub');
+  const [activeTab, setActiveTab] = useState<'hub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability'>('hub');
   const [isSimulating, setIsSimulating] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -151,6 +152,17 @@ export default function Home() {
         >
           <FileSearch size={16} /> 📑 Compliance Audit Ledger
         </button>
+
+        <button
+          onClick={() => setActiveTab('observability')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
+            activeTab === 'observability'
+              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-[#131d35]'
+          }`}
+        >
+          <Activity size={16} /> ⚡ SRE Health & Logs
+        </button>
       </div>
 
       {/* TAB 1: OPERATIONS HUB */}
@@ -217,6 +229,13 @@ export default function Home() {
             emails={emails} 
             onSelectEmail={(e) => setSelectedEmail(e)} 
           />
+        </div>
+      )}
+
+      {/* TAB 6: SRE OBSERVABILITY & HEALTH */}
+      {activeTab === 'observability' && (
+        <div className="animate-fadeIn">
+          <ObservabilityDashboard />
         </div>
       )}
 

@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   Layers, 
   Send,
-  Cloud 
+  Cloud,
+  Activity
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -54,8 +55,12 @@ export default function Sidebar() {
           <FileSearch size={18} />
           <span>Audit Trail</span>
         </a>
+        <a href="#observability" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#94a3b8] hover:text-white hover:bg-[#1a2332] font-medium text-sm transition-colors">
+          <Activity size={18} className="text-cyan-400" />
+          <span>SRE Observability</span>
+        </a>
         <a href="#azure" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#94a3b8] hover:text-white hover:bg-[#1a2332] font-medium text-sm transition-colors">
-          <Cloud size={18} className="text-cyan-400" />
+          <Cloud size={18} className="text-blue-400" />
           <span>Azure Services</span>
         </a>
       </nav>

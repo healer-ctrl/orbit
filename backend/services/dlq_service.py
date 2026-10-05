@@ -232,3 +232,7 @@ class DeadLetterQueueService:
 
         msg.status = DLQStatus.REPLAYED
         return {"success": True, "dlq_id": dlq_id, "status": msg.status.value}
+
+
+# Singleton instance
+dlq_service = DeadLetterQueueService()

@@ -17,6 +17,7 @@ from backend.models.email_models import IncomingEmail
 from backend.agents.orchestrator import MailMindOrchestrator
 from backend.telemetry import setup_logging, TraceContextMiddleware, init_tracer, get_current_trace_id, get_current_traceparent
 from backend.routers.health import router as health_router
+from backend.routers.observability import router as observability_router
 from backend.resilience import resilience_registry
 
 # Initialize enterprise structured JSON logging and OpenTelemetry tracing
@@ -164,6 +165,7 @@ app.add_middleware(
 
 # Include Production Health Probes (/healthz, /livez, /readyz)
 app.include_router(health_router)
+app.include_router(observability_router)
 
 orchestrator = MailMindOrchestrator()
 cosmos = orchestrator.cosmos
