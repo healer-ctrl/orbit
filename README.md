@@ -114,7 +114,9 @@
 
 ---
 
-## 🌐 Live Azure Cloud Resources
+## 🌐 Live Azure Cloud Resources & Cost Breakdown
+
+> 📑 **Detailed Architecture & Cost Specs**: See [**`AZURE_INFRASTRUCTURE_ARCHITECTURE_COSTS.md`**](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/AZURE_INFRASTRUCTURE_ARCHITECTURE_COSTS.md) for full SKU specs, machine flavors, database container schemas, Mermaid topology diagrams, and multi-tier TCO cost breakdowns.
 
 All cloud infrastructure is provisioned and running on Azure:
 
