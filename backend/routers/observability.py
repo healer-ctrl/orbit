@@ -1,6 +1,9 @@
 import time
 import os
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 from typing import Dict, Any, List
 from datetime import datetime, timezone
 from fastapi import APIRouter, Query, HTTPException, status

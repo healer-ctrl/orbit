@@ -14,3 +14,4 @@ opentelemetry-api>=1.25.0
 opentelemetry-sdk>=1.25.0
 opentelemetry-instrumentation-fastapi>=0.46b0
 python-json-logger>=2.0.7
+psutil>=5.9.0

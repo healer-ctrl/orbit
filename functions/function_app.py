@@ -3,7 +3,7 @@ import os
 import logging
 import azure.functions as func
 
-# Ensure backend directory and its subpackages are in python path
+# Ensure backend and subdirectories are in sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.join(current_dir, "backend")
 parent_dir = os.path.dirname(current_dir)
@@ -19,5 +19,5 @@ try:
 except ImportError:
     from main import app as fastapi_app
 
-# Expose AsgiFunctionApp with Anonymous / Implicit auth
+# Official Azure Functions Python v2 ASGI application wrapper
 app = func.AsgiFunctionApp(app=fastapi_app, http_auth_level=func.AuthLevel.ANONYMOUS)
