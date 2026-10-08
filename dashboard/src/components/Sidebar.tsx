@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { id: 'overview', label: 'Email Ingestion', tab: 'hub', sectionId: 'overview', icon: <Inbox size={18} />, color: 'text-blue-400' },
   { id: 'pipeline', label: 'Agent Pipeline', tab: 'hub', sectionId: 'pipeline', icon: <Cpu size={18} />, color: 'text-indigo-400' },
   { id: 'hitl', label: 'HITL Approvals', tab: 'hub', sectionId: 'hitl', icon: <CheckSquare size={18} />, color: 'text-amber-400' },
+  { id: 'apihub', label: 'OpenAPI / Swagger Hub', tab: 'apihub', sectionId: 'apihub', icon: <FileSearch size={18} />, color: 'text-amber-400' },
   { id: 'guardrails', label: 'PII & Guardrails', tab: 'guardrails', sectionId: 'guardrails', icon: <ShieldCheck size={18} />, color: 'text-emerald-400' },
   { id: 'daily', label: 'Daily Ops Report', tab: 'daily', sectionId: 'daily', icon: <BarChart3 size={18} />, color: 'text-indigo-400' },
   { id: 'sops', label: 'SOP Runbooks', tab: 'sops', sectionId: 'sops', icon: <BookOpen size={18} />, color: 'text-purple-400' },

@@ -13,13 +13,14 @@ import DailyOpsReport from '@/components/DailyOpsReport';
 import SOPBrowser from '@/components/SOPBrowser';
 import GuardrailPlayground from '@/components/GuardrailPlayground';
 import ObservabilityDashboard from '@/components/ObservabilityDashboard';
+import ApiExplorer from '@/components/ApiExplorer';
 import { INITIAL_EMAILS, ProcessedEmailRecord } from '@/lib/demoData';
-import { Layers, ShieldCheck, BarChart3, BookOpen, FileSearch, Inbox, CheckCircle2, Activity } from 'lucide-react';
+import { Layers, ShieldCheck, BarChart3, BookOpen, FileSearch, Inbox, CheckCircle2, Activity, Terminal } from 'lucide-react';
 
 export default function Home() {
   const [emails, setEmails] = useState<ProcessedEmailRecord[]>(INITIAL_EMAILS);
   const [selectedEmail, setSelectedEmail] = useState<ProcessedEmailRecord | null>(null);
-  const [activeTab, setActiveTab] = useState<'hub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability'>('hub');
+  const [activeTab, setActiveTab] = useState<'hub' | 'apihub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability'>('hub');
   const [isSimulating, setIsSimulating] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -43,7 +44,7 @@ export default function Home() {
     return () => window.removeEventListener('orbit:navigate', handleNavigate);
   }, []);
 
-  const handleTabClick = (tab: 'hub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability') => {
+  const handleTabClick = (tab: 'hub' | 'apihub' | 'guardrails' | 'daily' | 'sops' | 'audit' | 'observability') => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('orbit:tab-changed', { detail: { tab } }));
@@ -134,6 +135,17 @@ export default function Home() {
           }`}
         >
           <Inbox size={16} /> Operations Hub & Pipeline
+        </button>
+
+        <button
+          onClick={() => handleTabClick('apihub')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all ${
+            activeTab === 'apihub'
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-[#131d35]'
+          }`}
+        >
+          <Terminal size={16} /> ⚡ OpenAPI & Swagger Hub
         </button>
 
         <button
@@ -229,6 +241,13 @@ export default function Home() {
               onSelectEmail={(e) => setSelectedEmail(e)} 
             />
           </div>
+        </div>
+      )}
+
+      {/* TAB: OPENAPI / SWAGGER HUB */}
+      {activeTab === 'apihub' && (
+        <div id="apihub" className="animate-fadeIn">
+          <ApiExplorer />
         </div>
       )}
 
