@@ -227,13 +227,39 @@ orbit/
 
 ---
 
+## ⚡ Live Production Cloud Deployments
+
+| Component | Live Cloud URL | Details |
+| :--- | :--- | :--- |
+| **🚀 Production Dashboard & UI** | **[ambitious-moss-048f25a0f.5.azurestaticapps.net](https://ambitious-moss-048f25a0f.5.azurestaticapps.net)** | Live Next.js Web App with full Operations Hub, PII Guardrails, SOP Runbooks, Audit Ledger, and **OpenAPI Swagger Action Hub**. |
+| **⚡ Azure Functions Action Layer** | **[mailmind-functions-3207.azurewebsites.net](https://mailmind-functions-3207.azurewebsites.net)** | Live Serverless Action Gateway executing all 8 domain endpoints, Graph API mail daemon, and Cosmos DB audit logging. |
+| **📘 Interactive Swagger UI (`/docs`)** | **[mailmind-functions-3207.azurewebsites.net/docs](https://mailmind-functions-3207.azurewebsites.net/docs)** | Interactive Swagger UI definition to manually test endpoints with schema validation. |
+| **📕 ReDoc OpenAPI Docs (`/redoc`)** | **[mailmind-functions-3207.azurewebsites.net/redoc](https://mailmind-functions-3207.azurewebsites.net/redoc)** | Clean, human-readable API reference documentation for all 8 capital markets topics. |
+| **📜 OpenAPI JSON Schema** | **[mailmind-functions-3207.azurewebsites.net/openapi.json](https://mailmind-functions-3207.azurewebsites.net/openapi.json)** | Machine-readable OpenAPI 3.1.0 schema specification. |
+
+---
+
+## 🏛️ Capital Markets OpenAPI Action Layer (8 Core Topics)
+
+Orbit features an enterprise REST Action Layer covering 8 core Société Générale operational domains (16 endpoints):
+1. **Trade Linkage**: `POST /api/v1/linkage/create`, `POST /api/v1/linkage/verify`, `GET /api/v1/linkage/{galaxy_id}`
+2. **ELIOT Failure Resolution**: `POST /api/v1/eliot/retry`, `GET /api/v1/eliot/status/{ticket_id}`
+3. **Cash Flow (CF) Issues**: `POST /api/v1/cf-issue/create`, `GET /api/v1/cf-issue/{issue_id}`
+4. **Instrument Creation**: `POST /api/v1/instruments/create`, `GET /api/v1/instruments/{isin}`
+5. **Warrants Creation**: `POST /api/v1/warrants/issue`, `GET /api/v1/warrants/{warrant_id}`
+6. **Price Queries**: `POST /api/v1/prices/query`, `GET /api/v1/prices/history/{isin}`
+7. **Refinancing Rates**: `POST /api/v1/rates/update`, `GET /api/v1/rates/benchmark/{currency}`
+8. **KPIs & STP Tracking**: `POST /api/v1/kpi/record`, `GET /api/v1/kpi/summary`
+
+---
+
 ## 🏆 Hackathon Pitch Points for Judges
 
 1. **Domain Depth**: Tailored specifically for tier-1 investment bank capital markets operations (ISIN, CUSIP, SWIFT MT564/MT544, SSI).
 2. **Security-First**: Enterprise PII anonymization ensures sensitive customer data never leaves the security perimeter unprotected.
 3. **Institutional Memory**: Azure AI Search ensures decisions follow official Société Générale Standard Operating Procedures.
 4. **Governed Autonomy**: Risk-gated execution combines speed for routine operations with supervisor oversight for high-exposure trades.
-5. **Full Cloud Native**: Deployed across Azure AI Foundry, OpenAI, AI Search, Cosmos DB, and Azure Functions.
+5. **Full Cloud Native**: Deployed across Azure AI Foundry, OpenAI, AI Search, Cosmos DB, Azure Static Web Apps, and Azure Functions.
 
 ---
 

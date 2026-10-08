@@ -417,10 +417,12 @@ This script:
 
 Orbit exposes a domain-rich **Standardized Action Layer** documenting all core back-office actions across 8 key Société Générale topic areas.
 
-### 🌐 Interactive API Documentation
-- **Swagger UI Interactive Playground**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc Technical Specification**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-- **OpenAPI 3.1 JSON Schema**: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+### 🌐 Interactive API Documentation & Live Cloud Endpoints
+- **Live Interactive Swagger UI**: [https://mailmind-functions-3207.azurewebsites.net/docs](https://mailmind-functions-3207.azurewebsites.net/docs)
+- **Live ReDoc Technical Specification**: [https://mailmind-functions-3207.azurewebsites.net/redoc](https://mailmind-functions-3207.azurewebsites.net/redoc)
+- **Live OpenAPI 3.1 JSON Schema**: [https://mailmind-functions-3207.azurewebsites.net/openapi.json](https://mailmind-functions-3207.azurewebsites.net/openapi.json)
+- **Live Next.js Dashboard Swagger Hub**: [https://ambitious-moss-048f25a0f.5.azurestaticapps.net](https://ambitious-moss-048f25a0f.5.azurestaticapps.net) (Click **⚡ OpenAPI / Swagger Hub** tab)
+- **Local Dev Swagger**: [http://localhost:8000/docs](http://localhost:8000/docs) (or ReDoc at [http://localhost:8000/redoc](http://localhost:8000/redoc))
 
 ---
 
