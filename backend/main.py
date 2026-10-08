@@ -18,6 +18,7 @@ from backend.agents.orchestrator import MailMindOrchestrator
 from backend.telemetry import setup_logging, TraceContextMiddleware, init_tracer, get_current_trace_id, get_current_traceparent
 from backend.routers.health import router as health_router
 from backend.routers.observability import router as observability_router
+from backend.routers.capital_markets import router as capital_markets_router
 from backend.resilience import resilience_registry
 
 # Initialize enterprise structured JSON logging and OpenTelemetry tracing
@@ -185,11 +186,34 @@ async def lifespan(app: FastAPI):
     logger.info("🧠 MailMind Enterprise Backend shutting down cleanly...")
 
 
+OPENAPI_TAGS = [
+    {"name": "1. Trade Linkage", "description": "Block trade-to-Galaxy ID allocation and TARGET2 settlement verification."},
+    {"name": "2. ELIOT System Failures", "description": "ELIOT front-to-back trading system matching breaks, exception remediation, and engine resubmission."},
+    {"name": "3. Cash Flow (CF) Issues", "description": "Nostro/Vostro dividend entitlement break reconciliation and automated ledger adjustment."},
+    {"name": "4. Instrument Creation", "description": "Master reference data onboarding, ISIN ISO 6166 checksum validation, and CUSIP/SEDOL mapping."},
+    {"name": "5. Warrants Creation", "description": "Structured warrant issuance, strike/barrier termsheet registration, and Greeks calculation."},
+    {"name": "6. Price Queries", "description": "Real-time composite bid/ask market data quotes and multi-asset portfolio batch valuation."},
+    {"name": "7. Refinancing Rates", "description": "Central bank and money market benchmark curve publishing (€STR, SOFR, EURIBOR)."},
+    {"name": "8. KPIs & Metrics", "description": "Straight-Through Processing (STP) metrics, SLA compliance, and daily Ops transaction statistics."},
+]
+
 app = FastAPI(
-    title="MailMind API",
-    description="Intelligent Financial Email Automation Platform with OpenTelemetry & Enterprise Resilience",
+    title="Orbit Capital Markets & SRE Operations API",
+    description="""
+# 🚀 Orbit — Intelligent Financial Action Layer & Email Automation Platform
+### Société Générale Capital Markets · Standardized OpenAPI Action Suite
+
+This Swagger UI exposes the **Production Action Layer** for back-office operations:
+* **Automated Mode**: Executed autonomously by Multi-Agent AI and Azure Functions.
+* **Manual / Dev Mode**: Directly testable via these standardized REST endpoints.
+
+---
+    """,
     version="1.0.0",
     lifespan=lifespan,
+    openapi_tags=OPENAPI_TAGS,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # OpenTelemetry W3C Distributed Tracing Middleware
@@ -205,9 +229,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Production Health Probes (/healthz, /livez, /readyz)
+# Include Production Health Probes & Action Routers
 app.include_router(health_router)
 app.include_router(observability_router)
+app.include_router(capital_markets_router)
 
 
 # ── Custom Error Handlers ───────────────────────────────────────────────────

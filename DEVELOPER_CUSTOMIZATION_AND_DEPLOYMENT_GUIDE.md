@@ -413,5 +413,54 @@ This script:
 
 ---
 
+## 🏛️ 7. Capital Markets Action Layer REST API Reference (`/api/v1/...`)
+
+Orbit exposes a domain-rich **Standardized Action Layer** documenting all core back-office actions across 8 key Société Générale topic areas.
+
+### 🌐 Interactive API Documentation
+- **Swagger UI Interactive Playground**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc Technical Specification**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **OpenAPI 3.1 JSON Schema**: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+
+---
+
+### 📑 8 Core Domain Topics & Endpoints Matrix
+
+| # | Topic Domain | Method & Path | Description | Example Request / Query |
+| :--- | :--- | :--- | :--- | :--- |
+| **1** | **Trade Linkage** | `POST /api/v1/linkage/create` <br>`POST /api/v1/linkage/verify` <br>`GET /api/v1/linkage/{galaxyId}` | Block trade-to-Galaxy ID allocation and TARGET2 settlement verification. | `POST /api/v1/linkage/create` <br>`{"trade_id": "TRD-2026-88712", "isin": "US0378331005", "desk_book": "EQ-US-FLOW"}` |
+| **2** | **ELIOT System Failures** | `POST /api/v1/eliot/resolve-failure` <br>`GET /api/v1/eliot/unmatched-trades` <br>`POST /api/v1/eliot/resubmit/{tradeId}` | ELIOT front-to-back trading system matching breaks, exception remediation, and engine resubmission. | `POST /api/v1/eliot/resolve-failure` <br>`{"trade_id": "TRD-ELIOT-99214", "exception_code": "ELIOT_MATCH_BREAK_404"}` |
+| **3** | **Cash Flow (CF) Issues** | `POST /api/v1/cf-issue/reconcile` <br>`GET /api/v1/cf-issue/{cashFlowId}` <br>`POST /api/v1/cf-issue/adjust` | Nostro/Vostro dividend entitlement break reconciliation and automated ledger adjustment. | `POST /api/v1/cf-issue/reconcile` <br>`{"clearing_account": "ACC: 884729104829", "expected_amount": 30800.0, "settled_amount": 30800.0}` |
+| **4** | **Instrument Creation** | `POST /api/v1/instruments/create` <br>`GET /api/v1/instruments/{isin}` <br>`PATCH /api/v1/instruments/{isin}/update` | Master reference data onboarding, ISIN ISO 6166 checksum validation, and CUSIP/SEDOL mapping. | `POST /api/v1/instruments/create` <br>`{"isin": "FR0000120271", "security_name": "TotalEnergies SE", "asset_class": "EQUITY"}` |
+| **5** | **Warrants Creation** | `POST /api/v1/warrants/issue` <br>`GET /api/v1/warrants/{warrantId}` | Structured warrant issuance, strike/barrier termsheet registration, and Greeks calculation. | `POST /api/v1/warrants/issue` <br>`{"underlying_isin": "US0378331005", "strike_price": 220.0, "expiry_date": "2026-12-18"}` |
+| **6** | **Price Queries** | `GET /api/v1/pricing/quote/{isin}` <br>`POST /api/v1/pricing/batch-query` | Real-time composite bid/ask market data quotes and multi-asset portfolio batch valuation. | `GET /api/v1/pricing/quote/US0378331005` <br>Returns: `{"bid": 224.50, "ask": 224.55, "mid": 224.525}` |
+| **7** | **Refinancing Rates** | `POST /api/v1/refinancing/rates/update` <br>`GET /api/v1/refinancing/rates/latest` | Central bank and money market benchmark curve publishing (€STR, SOFR, EURIBOR). | `POST /api/v1/refinancing/rates/update` <br>`{"benchmark_code": "SOFR", "rate_percent": 5.33, "spread_bps": 12.5}` |
+| **8** | **KPIs & Metrics** | `GET /api/v1/kpi/stp-rate` <br>`GET /api/v1/kpi/operations-summary` | Straight-Through Processing (STP) metrics, SLA compliance, and daily Ops transaction statistics. | `GET /api/v1/kpi/stp-rate` <br>Returns: `{"stp_rate_percentage": 94.2}` |
+
+---
+
+### 📦 Standard JSON Response Pattern
+
+All Action Layer endpoints return a clean, deterministic schema:
+```json
+{
+  "status": "success",
+  "message": "Linkage successfully created and verified in Front-Office Booking Feeder",
+  "galaxy_id": "SG828282",
+  "timestamp": "2026-10-08T09:15:00Z",
+  "details": {
+    "trade_id": "TRD-2026-88712",
+    "isin": "US0378331005",
+    "allocated_book": "EQ-US-FLOW",
+    "amount": 1500000.0,
+    "currency": "USD",
+    "settlement_status": "MATCHED"
+  }
+}
+```
+
+---
+
 *Handy Reference for Société Générale Hackathon Team Orbit.*
+
 
