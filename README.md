@@ -114,9 +114,11 @@
 
 ---
 
-## 🌐 Live Azure Cloud Resources & Cost Breakdown
+## 🌐 Live Azure Cloud Resources, Cost Breakdown & Developer Handbook
 
-> 📑 **Detailed Architecture & Cost Specs**: See [**`AZURE_INFRASTRUCTURE_ARCHITECTURE_COSTS.md`**](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/AZURE_INFRASTRUCTURE_ARCHITECTURE_COSTS.md) for full SKU specs, machine flavors, database container schemas, Mermaid topology diagrams, and multi-tier TCO cost breakdowns.
+> 📑 **Architecture & Cost Specs**: See [**`AZURE_INFRASTRUCTURE_ARCHITECTURE_COSTS.md`**](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/AZURE_INFRASTRUCTURE_ARCHITECTURE_COSTS.md) for full SKU specs, machine flavors, database container schemas, Mermaid topology diagrams, and multi-tier TCO cost breakdowns.
+>
+> 🛠️ **Developer Customization & Deployment Handbook**: See [**`DEVELOPER_CUSTOMIZATION_AND_DEPLOYMENT_GUIDE.md`**](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/DEVELOPER_CUSTOMIZATION_AND_DEPLOYMENT_GUIDE.md) for how to write custom conditions in Azure Functions, customize UI components, restart apps, and deploy to Azure.
 
 All cloud infrastructure is provisioned and running on Azure:
 
