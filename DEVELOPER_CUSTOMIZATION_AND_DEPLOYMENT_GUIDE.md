@@ -356,4 +356,58 @@ az containerapp update \
 
 ---
 
+## 📬 6. Mock Data Files Map & Live Outlook (`orbit25690@outlook.com`) Integration
+
+### A. Complete Mock Data Files Directory
+If you want to view, modify, or add new mock scenarios, here is where all mock data is defined:
+
+| Mock Data Type | Exact File Path | What is Stored |
+| :--- | :--- | :--- |
+| **Ingested Emails (Backend)** | [`backend/data/sample_emails.json`](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/backend/data/sample_emails.json) | The 5 core raw email payloads (SAP Dividend, JPM Failed Settlement, Apple Trade Link, ISIN Mismatch, HR Ticket). |
+| **Dashboard UI Demo Records** | [`dashboard/src/lib/demoData.ts`](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/dashboard/src/lib/demoData.ts) | Pre-computed pipeline steps, PII masks, risk scores, SOP cards, and execution results for instantaneous UI rendering. |
+| **SOP Knowledge Base** | [`backend/services/search_service.py`](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/backend/services/search_service.py) | Institutional rules for `SOP-CA-001`, `SOP-SET-003`, `SOP-TL-001`, `SOP-REF-002`, and `SOP-SUP-001`. |
+| **Reference Data Registry** | [`backend/services/search_service.py`](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/backend/services/search_service.py) | Master data for SAP SE (`DE0007164600`), Apple (`US0378331005`), SocGen Bond (`XS0987654321`), JPM, BNP. |
+| **SRE Alert History** | [`backend/services/alerting_service.py`](file:///Users/ummadi/.gemini/antigravity/scratch/mailmind/backend/services/alerting_service.py) | Historical SRE alerts (P99 SLA warnings, circuit breaker resets, prompt injection flags). |
+
+---
+
+### B. Why is the Live Outlook Inbox Empty by Default?
+In local and demo mode, Orbit operates with **resilient deterministic fixtures** (`sample_emails.json` & `demoData.ts`). This guarantees:
+1. **Zero External Blocker**: Judges and testers can evaluate the entire multi-agent pipeline immediately without waiting for real-world SMTP email delivery latency.
+2. **Offline Compatibility**: Works seamlessly without requiring Microsoft 365 Tenant Admin consent for external Entra ID apps.
+
+---
+
+### C. How to Ingest Live Emails from `orbit25690@outlook.com` via Graph API
+
+To run the live email ingestion flow:
+
+#### Step 1: Send a Test Email
+Send an email to **`orbit25690@outlook.com`** from any email provider (Gmail, Outlook, etc.) with a capital markets subject, for example:
+- **Subject**: `URGENT: FAILED SETTLEMENT - T+1 SSI CORRECTION (TRD-998822)`
+- **Body**: `Please update IBAN DE89370400440532013000 to COBADEFF account for JPMorgan trade USD 2,450,000.`
+
+#### Step 2: Configure Graph API Credentials in `.env`
+Ensure your Microsoft Entra ID credentials are set:
+```ini
+GRAPH_TENANT_ID=<your-azure-ad-tenant-id>
+GRAPH_CLIENT_ID=<your-app-client-id>
+GRAPH_CLIENT_SECRET=<your-client-secret>
+GRAPH_MAILBOX_USER=orbit25690@outlook.com
+```
+
+#### Step 3: Run the Ingestion Bridge Script
+Run the automated live mailbox ingestion script:
+```bash
+python3 scripts/send_and_process_outlook.py
+```
+This script:
+1. Connects to `https://graph.microsoft.com/v1.0/users/orbit25690@outlook.com/messages`.
+2. Reads the unread emails from the inbox.
+3. Streams them through the **PII Shield -> Classifier -> Parser -> Decision RAG -> Risk Scorer -> Action Execution / Teams HITL** pipeline.
+4. Updates the live dashboard and Cosmos DB in real-time.
+
+---
+
 *Handy Reference for Société Générale Hackathon Team Orbit.*
+
