@@ -68,9 +68,13 @@ Orbit's Azure Functions (`functions/function_app.py`) uses the Python v2 program
    - Ingests incoming emails directly from Microsoft Graph API webhooks and Event Grid.
 2. **HTTP Action Execution Trigger** (`@app.route(route="execute_action", methods=["POST"])`):
    - Serverless microservice that executes back-office actions (Corporate Actions, SSI updates, Trade Linkage, ITSM).
-3. **Timer Trigger** (`@app.timer_trigger(schedule="0 */15 * * * *", arg_name="timer")`):
+3. **Timer Trigger: SLA Cutoff Monitor** (`@app.timer_trigger(schedule="0 */15 * * * *", arg_name="timer")`):
    - Runs every 15 minutes to monitor T+1 settlement deadlines and escalate pending HITL approvals.
-4. **Cosmos DB Change Feed Trigger** (Optional Event-Driven Extension):
+4. **Continuous Automated Inbox Sync Timer Trigger** (`@app.timer_trigger(schedule="0 */1 * * * *", arg_name="timer", run_on_startup=True)`):
+   - Runs every 1 minute in Azure serverless to continuously poll `orbit25690@outlook.com` via Microsoft Graph API and process incoming emails automatically with zero manual intervention.
+5. **Continuous Async Background Daemon (FastAPI Lifespan)**:
+   - When the backend is running, an async background task (`auto_poll_mailbox_worker`) wakes up every 30 seconds to fetch, deduplicate, and process new unread emails from `orbit25690@outlook.com`.
+6. **Cosmos DB Change Feed Trigger** (Optional Event-Driven Extension):
    - `@app.cosmos_db_trigger(arg_name="documents", database_name="mailminddb", container_name="emails", connection="AZURE_COSMOS_CONNECTION")`
 
 ---
