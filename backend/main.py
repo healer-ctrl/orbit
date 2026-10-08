@@ -136,10 +136,52 @@ manager = ConnectionManager()
 
 # ── App setup ────────────────────────────────────────────────────────────────
 
+orchestrator = MailMindOrchestrator()
+cosmos = orchestrator.cosmos
+
+
+async def auto_poll_mailbox_worker():
+    """Continuous automated background worker that syncs unread emails from orbit25690@outlook.com via Graph API."""
+    logger.info("📬 [Auto-Sync Daemon] Started for orbit25690@outlook.com (continuous 30s background loop)")
+    seen_ids = set()
+    while True:
+        try:
+            messages = orchestrator.graph.fetch_recent_inbox_messages(limit=10, mailbox_user="orbit25690@outlook.com")
+            for msg in messages:
+                msg_id = msg.get("id")
+                if msg_id and msg_id not in seen_ids:
+                    seen_ids.add(msg_id)
+                    inc_email = IncomingEmail(
+                        id=msg_id,
+                        sender=msg.get("sender", "unknown"),
+                        subject=msg.get("subject", "No Subject"),
+                        body=msg.get("body", ""),
+                        received_at=msg.get("received_at", datetime.now(timezone.utc).isoformat()),
+                        attachments=[],
+                        raw_headers={},
+                    )
+                    logger.info("⚡ [Auto-Ingest] Processing incoming email automatically: %s", inc_email.subject)
+                    result = orchestrator.process_email(inc_email)
+                    intent_str = result.intent.value if hasattr(result, "intent") and hasattr(result.intent, "value") else str(getattr(result, "intent", "PROCESSED"))
+                    await manager.broadcast({
+                        "type": "email_processed",
+                        "email_id": msg_id,
+                        "subject": inc_email.subject,
+                        "intent": intent_str,
+                        "status": getattr(result, "status", "AUTO_EXECUTED"),
+                    })
+        except Exception as e:
+            logger.debug("Auto-poll background worker heartbeat: %s", e)
+        await asyncio.sleep(30)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🧠 MailMind Enterprise Backend starting up with OpenTelemetry & Circuit Breakers...")
+    # Start continuous automated background inbox polling daemon
+    poll_task = asyncio.create_task(auto_poll_mailbox_worker())
     yield
+    poll_task.cancel()
     logger.info("🧠 MailMind Enterprise Backend shutting down cleanly...")
 
 
@@ -167,8 +209,6 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(observability_router)
 
-orchestrator = MailMindOrchestrator()
-cosmos = orchestrator.cosmos
 
 # ── Custom Error Handlers ───────────────────────────────────────────────────
 

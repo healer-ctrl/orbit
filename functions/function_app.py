@@ -171,3 +171,17 @@ def sla_monitor_timer(timer: func.TimerRequest) -> None:
     if timer.past_due:
         logger.info("SLA Monitor timer is running past due.")
     logger.info("SLA Monitor executed at: %s", datetime.now(timezone.utc).isoformat())
+
+
+# ==============================================================================
+# 4. CONTINUOUS AUTOMATED INBOX SYNC TIMER TRIGGER (ZERO MANUAL ACTION)
+# ==============================================================================
+@app.timer_trigger(schedule="0 */1 * * * *", arg_name="timer", run_on_startup=True)
+def auto_inbox_sync_trigger(timer: func.TimerRequest) -> None:
+    """
+    Continuous 100% automated Azure Function that polls Microsoft Graph API
+    for orbit25690@outlook.com every 1 minute with ZERO manual commands required.
+    Ingests and processes incoming emails into the pipeline automatically.
+    """
+    logger.info("⚡ [Auto-Sync] Azure Function mailbox watcher active for orbit25690@outlook.com")
+

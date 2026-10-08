@@ -189,3 +189,35 @@ class GraphService:
             except Exception as e:
                 logger.error("Error sending reply via Graph API: %s", e)
                 return False
+
+    def fetch_recent_inbox_messages(self, limit: int = 10, mailbox_user: str = "orbit25690@outlook.com") -> List[Dict[str, Any]]:
+        """Fetches latest unread/recent messages from inbox."""
+        token = self.get_access_token()
+        if not token or token == "simulated_bearer_token":
+            return []
+
+        headers = {"Authorization": f"Bearer {token}"}
+        inject_traceparent(headers)
+        url = f"{self.GRAPH_BASE_URL}/users/{mailbox_user}/mailFolders('Inbox')/messages?$top={limit}&$orderby=receivedDateTime desc"
+
+        try:
+            resp = httpx.get(url, headers=headers, timeout=10.0)
+            if resp.status_code == 200:
+                messages = resp.json().get("value", [])
+                formatted = []
+                for msg in messages:
+                    formatted.append({
+                        "id": msg.get("id"),
+                        "subject": msg.get("subject", "No Subject"),
+                        "sender": msg.get("from", {}).get("emailAddress", {}).get("address", "unknown@sender.com"),
+                        "body": msg.get("body", {}).get("content", "") or msg.get("bodyPreview", ""),
+                        "received_at": msg.get("receivedDateTime", datetime.utcnow().isoformat()),
+                    })
+                return formatted
+            else:
+                logger.debug("Graph fetch messages status: %d", resp.status_code)
+                return []
+        except Exception as e:
+            logger.debug("Error querying recent messages from Graph: %s", e)
+            return []
+
