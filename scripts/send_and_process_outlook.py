@@ -67,8 +67,10 @@ def process_live_graph_emails():
             )
             logger.info("⚡ Processing: [%s] -> %s", inc_email.id, inc_email.subject)
             result = orchestrator.process_email(inc_email)
-            logger.info("✅ Result: Intent=%s | RiskScore=%s | Status=%s",
-                        result.get("intent"), result.get("risk_score"), result.get("status"))
+            intent_val = getattr(result, "intent", None) or (result.get("intent") if isinstance(result, dict) else "UNKNOWN")
+            risk_val = getattr(result, "risk_score", None) or (result.get("risk_score") if isinstance(result, dict) else 0.0)
+            status_val = getattr(result, "status", None) or (result.get("status") if isinstance(result, dict) else "EXECUTED")
+            logger.info("✅ Result: Intent=%s | RiskScore=%s | Status=%s", intent_val, risk_val, status_val)
         return
 
     # If live token is present, query Graph API messages
@@ -113,8 +115,10 @@ def process_live_graph_emails():
                 )
                 logger.info("⚡ Ingesting scenario: [%s] -> %s", inc_email.id, inc_email.subject)
                 result = orchestrator.process_email(inc_email)
-                logger.info("✅ Result: Intent=%s | RiskScore=%s | Status=%s",
-                            result.get("intent"), result.get("risk_score"), result.get("status"))
+                intent_val = getattr(result, "intent", None) or (result.get("intent") if isinstance(result, dict) else "UNKNOWN")
+                risk_val = getattr(result, "risk_score", None) or (result.get("risk_score") if isinstance(result, dict) else 0.0)
+                status_val = getattr(result, "status", None) or (result.get("status") if isinstance(result, dict) else "EXECUTED")
+                logger.info("✅ Result: Intent=%s | RiskScore=%s | Status=%s", intent_val, risk_val, status_val)
     except Exception as e:
         logger.exception("Error querying Graph API: %s", e)
 
